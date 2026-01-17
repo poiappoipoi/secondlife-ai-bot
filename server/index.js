@@ -193,7 +193,8 @@ app.post('/chat', async (req, res) => {
     }
 });
 
-app.listen(80, () => {
+app.listen(3000, () => {
     console.log('--- Grok Server 已啟動 ---');
     console.log(`--- 流量限制: 每小時 ${MAX_REQUESTS_PER_HOUR} 次 ---`);
+    console.log(`--- 服務運行在端口 3000 ---`);
 });

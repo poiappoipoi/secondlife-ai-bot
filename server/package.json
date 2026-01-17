@@ -1,0 +1,14 @@
+{
+  "name": "secondlife-ai-bot",
+  "version": "1.0.0",
+  "description": "AI bot server for Second Life",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.0",
+    "express": "^4.18.0",
+    "axios": "^1.6.0"
+  }
+}
