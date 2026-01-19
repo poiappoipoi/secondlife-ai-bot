@@ -31,3 +31,7 @@ Thumbs.db
 tmpclaude-*
 
 .claude/
+
+# Cloudflare Tunnel
+.cloudflared/
+cloudflared-config.yml

@@ -78,12 +78,45 @@ The server will start on port 3000 by default.
 
 服务器将在默认端口 3000 上启动。
 
+### Exposing Your Server / 暴露服务器
+
+To allow your Second Life LSL script to connect to the server, you need to expose it to the internet. There are several options:
+
+为了让 Second Life LSL 脚本连接到服务器，您需要将其暴露到互联网。有几种选择：
+
+#### Option 1: Cloudflare Tunnel (Recommended) / Cloudflare 隧道（推荐）
+
+Cloudflare Tunnel is the easiest and most secure way to expose your server without opening firewall ports. See [CLOUDFLARE_TUNNEL.md](CLOUDFLARE_TUNNEL.md) for detailed setup instructions.
+
+Cloudflare 隧道是最简单、最安全的方式，无需打开防火墙端口即可暴露服务器。有关详细设置说明，请参阅 [CLOUDFLARE_TUNNEL.md](CLOUDFLARE_TUNNEL.md)。
+
+**Quick Start / 快速开始:**
+```bash
+# Install cloudflared / 安装 cloudflared
+# Then run / 然后运行:
+cloudflared tunnel --url http://localhost:3000
+```
+
+#### Option 2: Direct IP Access / 直接 IP 访问
+
+If your server is accessible via a public IP, you can use it directly. Make sure port 3000 (or your configured PORT) is open in your firewall.
+
+如果您的服务器可通过公共 IP 访问，可以直接使用它。确保防火墙中开放了端口 3000（或您配置的 PORT）。
+
 ### Setting up in Second Life / 在 Second Life 中设置
 
 1. Copy the content of `lsl/brain.lsl` / 复制 `lsl/brain.lsl` 的内容
 2. Create a new script in Second Life / 在 Second Life 中创建新脚本
-3. Paste the script and set `url_base` to your server IP address / 粘贴脚本并设置 `url_base` 为你的服务器 IP 地址：
+3. Paste the script and set `url_base` to your server URL / 粘贴脚本并设置 `url_base` 为您的服务器 URL：
 
+**If using Cloudflare Tunnel / 如果使用 Cloudflare 隧道:**
+```lsl
+string url_base = "https://your-domain.example.com";
+// or for quick tunnel / 或快速隧道:
+string url_base = "https://random-name.trycloudflare.com";
+```
+
+**If using direct IP / 如果使用直接 IP:**
 ```lsl
 string url_base = "http://your-server-ip:3000";
 ```
