@@ -13,6 +13,9 @@ key.env
 logs/
 *.log
 
+# Build output
+dist/
+
 # OS files
 .DS_Store
 Thumbs.db
@@ -23,3 +26,8 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# Temp files
+tmpclaude-*
+
+.claude/

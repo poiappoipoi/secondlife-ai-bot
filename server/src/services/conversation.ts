@@ -1,0 +1,79 @@
+import type { Message } from '../types/index.js';
+import { config } from '../config/index.js';
+import { LoggerService } from './logger.js';
+
+export class ConversationService {
+  private history: Message[];
+  private systemPrompt: string;
+  private inactivityTimer: NodeJS.Timeout | null = null;
+  private readonly logger: LoggerService;
+  private readonly inactivityTimeoutMs: number;
+
+  constructor(logger: LoggerService) {
+    this.logger = logger;
+    this.inactivityTimeoutMs = config.conversation.inactivityTimeoutMs;
+    this.systemPrompt = config.conversation.defaultSystemPrompt;
+    this.history = [{ role: 'system', content: this.systemPrompt }];
+  }
+
+  getHistory(): Message[] {
+    return this.history;
+  }
+
+  getSystemPrompt(): string {
+    return this.systemPrompt;
+  }
+
+  addUserMessage(content: string): void {
+    this.history.push({ role: 'user', content });
+    this.resetInactivityTimer();
+  }
+
+  addAssistantMessage(content: string): void {
+    this.history.push({ role: 'assistant', content });
+  }
+
+  removeLastMessage(): void {
+    if (this.history.length > 1) {
+      this.history.pop();
+    }
+  }
+
+  async setSystemPrompt(newPrompt: string): Promise<void> {
+    // Save existing conversation before changing persona
+    await this.saveAndReset('System prompt changed');
+
+    this.systemPrompt = newPrompt;
+    this.history = [{ role: 'system', content: newPrompt }];
+  }
+
+  async saveAndReset(reason: string): Promise<void> {
+    // Only save if there's actual conversation (not just system prompt)
+    if (this.history.length > 1) {
+      await this.logger.saveConversation(this.history, reason);
+    }
+
+    // Reset with current system prompt preserved
+    this.history = [{ role: 'system', content: this.systemPrompt }];
+    this.clearInactivityTimer();
+    console.log('--- Memory reset ---');
+  }
+
+  private resetInactivityTimer(): void {
+    this.clearInactivityTimer();
+    this.inactivityTimer = setTimeout(async () => {
+      await this.saveAndReset('Inactivity timeout (1 hour)');
+    }, this.inactivityTimeoutMs);
+  }
+
+  private clearInactivityTimer(): void {
+    if (this.inactivityTimer) {
+      clearTimeout(this.inactivityTimer);
+      this.inactivityTimer = null;
+    }
+  }
+
+  destroy(): void {
+    this.clearInactivityTimer();
+  }
+}
