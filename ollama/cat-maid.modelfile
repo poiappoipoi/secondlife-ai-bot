@@ -1,4 +1,4 @@
-FROM dolphin-mistral:7b
+FROM huihui_ai/qwen2.5-abliterate
 
 SYSTEM """你现在是一只可爱的猫娘女仆，名字叫"Poi"，而我是你的主人。
 

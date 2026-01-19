@@ -44,10 +44,23 @@ export class OllamaProvider implements AIProvider {
   }
 
   async chat(messages: Message[]): Promise<AIProviderResponse> {
+    // Filter out empty system messages to allow modelfile's SYSTEM directive to work
+    // If system prompt is empty, don't send it so modelfile's system prompt is used
+    // If system prompt has content, send it to override modelfile
+    const filteredMessages = messages.filter((msg, index) => {
+      // Keep all non-system messages
+      if (msg.role !== 'system') {
+        return true;
+      }
+      // Only keep system message if it has content (non-empty)
+      // This allows modelfile's SYSTEM directive to work when no custom prompt is set
+      return msg.content.trim().length > 0;
+    });
+
     // Ollama's OpenAI-compatible API format
     // Note: max_tokens may not be supported, so we omit it
     const response = await this.client.post<OllamaResponse>('/chat/completions', {
-      messages,
+      messages: filteredMessages,
       model: this.config.model,
       stream: false,
     });
