@@ -103,7 +103,7 @@ export class ConversationService {
   async saveAndReset(reason: string): Promise<void> {
     // Fire-and-forget logging - don't block on file I/O
     if (this.history.length > 1) {
-      this.logger.saveConversation(this.history, reason).catch((error) => {
+      void this.logger.saveConversation(this.history, reason).catch((error) => {
         console.error('Failed to save conversation log:', error);
       });
     }
@@ -112,6 +112,7 @@ export class ConversationService {
     this.history = [{ role: 'system', content: this.systemPrompt }];
     this.clearInactivityTimer();
     console.log('--- Memory reset ---');
+    await Promise.resolve(); // Satisfy async requirement
   }
 
   /**
@@ -119,8 +120,8 @@ export class ConversationService {
    */
   private resetInactivityTimer(): void {
     this.clearInactivityTimer();
-    this.inactivityTimer = setTimeout(async () => {
-      await this.saveAndReset('Inactivity timeout (1 hour)');
+    this.inactivityTimer = setTimeout(() => {
+      void this.saveAndReset('Inactivity timeout (1 hour)');
     }, this.inactivityTimeoutMs);
   }
 

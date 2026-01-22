@@ -45,9 +45,7 @@ describe('XAIProvider', () => {
       };
 
       global.fetch = mock(() =>
-        Promise.resolve(
-          new Response(JSON.stringify(mockResponse), { status: 200 })
-        )
+        Promise.resolve(new Response(JSON.stringify(mockResponse), { status: 200 }))
       );
 
       const messages: Message[] = [
@@ -92,14 +90,10 @@ describe('XAIProvider', () => {
       };
 
       global.fetch = mock(() =>
-        Promise.resolve(
-          new Response(JSON.stringify(mockResponse), { status: 200 })
-        )
+        Promise.resolve(new Response(JSON.stringify(mockResponse), { status: 200 }))
       );
 
-      const result = await provider.chat([
-        { role: 'user', content: 'Test' },
-      ]);
+      const result = await provider.chat([{ role: 'user', content: 'Test' }]);
 
       expect(result.content).toBe('Response from output format');
     });
@@ -108,14 +102,12 @@ describe('XAIProvider', () => {
       const mockResponse = { invalid: 'format' };
 
       global.fetch = mock(() =>
-        Promise.resolve(
-          new Response(JSON.stringify(mockResponse), { status: 200 })
-        )
+        Promise.resolve(new Response(JSON.stringify(mockResponse), { status: 200 }))
       );
 
-      await expect(
-        provider.chat([{ role: 'user', content: 'Test' }])
-      ).rejects.toThrow('Unable to parse AI response format');
+      await expect(provider.chat([{ role: 'user', content: 'Test' }])).rejects.toThrow(
+        'Unable to parse AI response format'
+      );
     });
 
     it('should handle response without usage data', async () => {
@@ -130,9 +122,7 @@ describe('XAIProvider', () => {
       };
 
       global.fetch = mock(() =>
-        Promise.resolve(
-          new Response(JSON.stringify(mockResponse), { status: 200 })
-        )
+        Promise.resolve(new Response(JSON.stringify(mockResponse), { status: 200 }))
       );
 
       const result = await provider.chat([{ role: 'user', content: 'Test' }]);

@@ -23,7 +23,7 @@ function getUtcTimeFilename(): string {
   const formatter = new Intl.DateTimeFormat('en-CA', options);
   const parts = formatter.formatToParts(now);
   const get = (type: Intl.DateTimeFormatPartTypes): string =>
-    parts.find(p => p.type === type)?.value ?? '';
+    parts.find((p) => p.type === type)?.value ?? '';
   return `${get('year')}${get('month')}${get('day')}${get('hour')}${get('minute')}`;
 }
 
@@ -57,7 +57,7 @@ export class LoggerService {
    */
   async saveConversation(history: Message[], reason: string): Promise<void> {
     await this.logsDirInitialized;
-    
+
     const filename = `${getUtcTimeFilename()}.txt`;
     const filePath = path.join(this.logsDir, filename);
     const content = JSON.stringify(history, null, 2);

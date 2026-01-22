@@ -40,9 +40,7 @@ describe('OllamaProvider', () => {
       };
 
       global.fetch = mock(() =>
-        Promise.resolve(
-          new Response(JSON.stringify(mockResponse), { status: 200 })
-        )
+        Promise.resolve(new Response(JSON.stringify(mockResponse), { status: 200 }))
       );
 
       const messages: Message[] = [
@@ -87,9 +85,7 @@ describe('OllamaProvider', () => {
       };
 
       global.fetch = mock(() =>
-        Promise.resolve(
-          new Response(JSON.stringify(mockResponse), { status: 200 })
-        )
+        Promise.resolve(new Response(JSON.stringify(mockResponse), { status: 200 }))
       );
 
       const messages: Message[] = [
@@ -118,9 +114,7 @@ describe('OllamaProvider', () => {
       };
 
       global.fetch = mock(() =>
-        Promise.resolve(
-          new Response(JSON.stringify(mockResponse), { status: 200 })
-        )
+        Promise.resolve(new Response(JSON.stringify(mockResponse), { status: 200 }))
       );
 
       const messages: Message[] = [
@@ -142,14 +136,12 @@ describe('OllamaProvider', () => {
       };
 
       global.fetch = mock(() =>
-        Promise.resolve(
-          new Response(JSON.stringify(mockResponse), { status: 200 })
-        )
+        Promise.resolve(new Response(JSON.stringify(mockResponse), { status: 200 }))
       );
 
-      await expect(
-        provider.chat([{ role: 'user', content: 'Test' }])
-      ).rejects.toThrow('Unable to parse Ollama response');
+      await expect(provider.chat([{ role: 'user', content: 'Test' }])).rejects.toThrow(
+        'Unable to parse Ollama response'
+      );
     });
 
     it('should handle response without usage data', async () => {
@@ -164,9 +156,7 @@ describe('OllamaProvider', () => {
       };
 
       global.fetch = mock(() =>
-        Promise.resolve(
-          new Response(JSON.stringify(mockResponse), { status: 200 })
-        )
+        Promise.resolve(new Response(JSON.stringify(mockResponse), { status: 200 }))
       );
 
       const result = await provider.chat([{ role: 'user', content: 'Test' }]);
@@ -187,9 +177,7 @@ describe('OllamaProvider', () => {
       };
 
       global.fetch = mock(() =>
-        Promise.resolve(
-          new Response(JSON.stringify(mockResponse), { status: 200 })
-        )
+        Promise.resolve(new Response(JSON.stringify(mockResponse), { status: 200 }))
       );
 
       await provider.chat([{ role: 'user', content: 'Test' }]);
@@ -226,9 +214,7 @@ describe('OllamaProvider', () => {
         choices: [{}],
       };
 
-      expect(() => provider['parseResponse'](data)).toThrow(
-        'Unable to parse Ollama response'
-      );
+      expect(() => provider['parseResponse'](data)).toThrow('Unable to parse Ollama response');
     });
   });
 
@@ -237,11 +223,7 @@ describe('OllamaProvider', () => {
       global.fetch = mock(() => new Promise(() => {}));
 
       await expect(
-        provider['fetchWithTimeout'](
-          'http://localhost:11434/v1/test',
-          { method: 'GET' },
-          10
-        )
+        provider['fetchWithTimeout']('http://localhost:11434/v1/test', { method: 'GET' }, 10)
       ).rejects.toThrow('Request timeout after 10ms');
     });
   });

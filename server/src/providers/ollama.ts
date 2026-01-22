@@ -48,7 +48,11 @@ export class OllamaProvider implements AIProvider {
   /**
    * Performs fetch request with timeout using AbortController
    */
-  private async fetchWithTimeout(url: string, options: RequestInit, timeout: number): Promise<Response> {
+  private async fetchWithTimeout(
+    url: string,
+    options: RequestInit,
+    timeout: number
+  ): Promise<Response> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
@@ -102,7 +106,7 @@ export class OllamaProvider implements AIProvider {
       throw new Error(`HTTP ${response.status} ${response.statusText}: ${errorText}`);
     }
 
-    const data = await response.json() as OllamaResponse;
+    const data = (await response.json()) as OllamaResponse;
     return this.parseResponse(data);
   }
 
@@ -150,9 +154,10 @@ export class OllamaProvider implements AIProvider {
 
     try {
       while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+        const result = await reader.read();
+        if (result.done || !result.value) break;
 
+        const value = result.value as Uint8Array;
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n');
         buffer = lines.pop() || '';
@@ -165,9 +170,26 @@ export class OllamaProvider implements AIProvider {
                 return;
               }
               try {
-                const parsed = JSON.parse(data);
-                if (parsed.choices?.[0]?.delta?.content) {
-                  yield String(parsed.choices[0].delta.content);
+                const parsed: unknown = JSON.parse(data);
+                if (typeof parsed === 'object' && parsed !== null && 'choices' in parsed) {
+                  const choices = (parsed as { choices: unknown }).choices;
+                  if (
+                    Array.isArray(choices) &&
+                    choices[0] &&
+                    typeof choices[0] === 'object' &&
+                    choices[0] !== null &&
+                    'delta' in choices[0]
+                  ) {
+                    const delta = (choices[0] as { delta: unknown }).delta;
+                    if (
+                      delta &&
+                      typeof delta === 'object' &&
+                      delta !== null &&
+                      'content' in delta
+                    ) {
+                      yield String((delta as { content: unknown }).content);
+                    }
+                  }
                 }
               } catch {
                 // Ignore invalid JSON in stream
@@ -175,12 +197,29 @@ export class OllamaProvider implements AIProvider {
             } else {
               // Ollama may also send JSON directly without "data: " prefix
               try {
-                const parsed = JSON.parse(line);
-                if (parsed.choices?.[0]?.delta?.content) {
-                  yield String(parsed.choices[0].delta.content);
-                }
-                if (parsed.choices?.[0]?.finish_reason === 'stop') {
-                  return;
+                const parsed: unknown = JSON.parse(line);
+                if (typeof parsed === 'object' && parsed !== null && 'choices' in parsed) {
+                  const choices = (parsed as { choices: unknown }).choices;
+                  if (
+                    Array.isArray(choices) &&
+                    choices[0] &&
+                    typeof choices[0] === 'object' &&
+                    choices[0] !== null
+                  ) {
+                    const choice = choices[0] as Record<string, unknown>;
+                    const delta = choice.delta;
+                    if (
+                      delta &&
+                      typeof delta === 'object' &&
+                      delta !== null &&
+                      'content' in delta
+                    ) {
+                      yield String((delta as { content: unknown }).content);
+                    }
+                    if (choice.finish_reason === 'stop') {
+                      return;
+                    }
+                  }
                 }
               } catch {
                 // Ignore invalid JSON
@@ -196,9 +235,21 @@ export class OllamaProvider implements AIProvider {
           const data = buffer.slice(6).trim();
           if (data !== '[DONE]') {
             try {
-              const parsed = JSON.parse(data);
-              if (parsed.choices?.[0]?.delta?.content) {
-                yield String(parsed.choices[0].delta.content);
+              const parsed: unknown = JSON.parse(data);
+              if (typeof parsed === 'object' && parsed !== null && 'choices' in parsed) {
+                const choices = (parsed as { choices: unknown }).choices;
+                if (
+                  Array.isArray(choices) &&
+                  choices[0] &&
+                  typeof choices[0] === 'object' &&
+                  choices[0] !== null &&
+                  'delta' in choices[0]
+                ) {
+                  const delta = (choices[0] as { delta: unknown }).delta;
+                  if (delta && typeof delta === 'object' && delta !== null && 'content' in delta) {
+                    yield String((delta as { content: unknown }).content);
+                  }
+                }
               }
             } catch {
               // Ignore invalid JSON
@@ -206,9 +257,21 @@ export class OllamaProvider implements AIProvider {
           }
         } else {
           try {
-            const parsed = JSON.parse(buffer);
-            if (parsed.choices?.[0]?.delta?.content) {
-              yield String(parsed.choices[0].delta.content);
+            const parsed: unknown = JSON.parse(buffer);
+            if (typeof parsed === 'object' && parsed !== null && 'choices' in parsed) {
+              const choices = (parsed as { choices: unknown }).choices;
+              if (
+                Array.isArray(choices) &&
+                choices[0] &&
+                typeof choices[0] === 'object' &&
+                choices[0] !== null &&
+                'delta' in choices[0]
+              ) {
+                const delta = (choices[0] as { delta: unknown }).delta;
+                if (delta && typeof delta === 'object' && delta !== null && 'content' in delta) {
+                  yield String((delta as { content: unknown }).content);
+                }
+              }
             }
           } catch {
             // Ignore invalid JSON
@@ -231,11 +294,13 @@ export class OllamaProvider implements AIProvider {
 
     return {
       content,
-      usage: data.usage ? {
-        promptTokens: data.usage.prompt_tokens,
-        completionTokens: data.usage.completion_tokens,
-        totalTokens: data.usage.total_tokens,
-      } : undefined,
+      usage: data.usage
+        ? {
+            promptTokens: data.usage.prompt_tokens,
+            completionTokens: data.usage.completion_tokens,
+            totalTokens: data.usage.total_tokens,
+          }
+        : undefined,
     };
   }
 }

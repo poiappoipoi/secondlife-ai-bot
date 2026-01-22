@@ -20,25 +20,25 @@ describe('System Prompt Router', () => {
     };
 
     mockResponse = {
-      status: mock((code: number) => mockResponse as Response),
-      send: mock((body: string) => mockResponse as Response),
+      status: mock((_code: number) => mockResponse as Response),
+      send: mock((_body: string) => mockResponse as Response),
     };
   });
 
   const getHandler = (routerInstance: ReturnType<typeof createSystemPromptRouter>) => {
     const stack = (routerInstance as any).stack || [];
-    const route = stack.find((layer: any) => 
-      layer.route?.path === '/' && layer.route?.methods?.post
+    const route = stack.find(
+      (layer: any) => layer.route?.path === '/' && layer.route?.methods?.post
     );
     return route?.route?.stack?.[0]?.handle;
   };
 
   it('should return 400 if prompt is missing', async () => {
     mockRequest.body = {};
-    
+
     const handler = getHandler(router);
     expect(handler).toBeDefined();
-    
+
     await handler(mockRequest as Request, mockResponse as Response);
     expect(mockResponse.status).toHaveBeenCalledWith(400);
     expect(mockResponse.send).toHaveBeenCalledWith('Please provide prompt content');
@@ -46,10 +46,10 @@ describe('System Prompt Router', () => {
 
   it('should return 400 if prompt is empty string', async () => {
     mockRequest.body = { prompt: '' };
-    
+
     const handler = getHandler(router);
     expect(handler).toBeDefined();
-    
+
     await handler(mockRequest as Request, mockResponse as Response);
     expect(mockResponse.status).toHaveBeenCalledWith(400);
     expect(mockResponse.send).toHaveBeenCalledWith('Please provide prompt content');
@@ -65,12 +65,12 @@ describe('System Prompt Router', () => {
 
     const handler = getHandler(router);
     expect(handler).toBeDefined();
-    
+
     await handler(mockRequest as Request, mockResponse as Response);
     expect(saveSpy).toHaveBeenCalled();
     expect(conversation.getSystemPrompt()).toBe('New persona');
     expect(mockResponse.send).toHaveBeenCalledWith('設定成功！我現在是：New persona');
-    
+
     const history = conversation.getHistory();
     expect(history).toHaveLength(1);
     expect(history[0].content).toBe('New persona');
@@ -90,7 +90,7 @@ describe('System Prompt Router', () => {
     mockRequest.body = { prompt: 'Updated persona' };
     const handler = getHandler(router);
     expect(handler).toBeDefined();
-    
+
     await handler(mockRequest as Request, mockResponse as Response);
     expect(saveSpy).toHaveBeenCalledTimes(1);
     const savedHistory = saveSpy.mock.calls[0][0];
@@ -104,7 +104,7 @@ describe('System Prompt Router', () => {
 
     const handler = getHandler(router);
     expect(handler).toBeDefined();
-    
+
     await handler(mockRequest as Request, mockResponse as Response);
     expect(conversation.getSystemPrompt()).toBe('Persona with "quotes" and \'apostrophes\'');
     expect(mockResponse.send).toHaveBeenCalledWith(
@@ -120,7 +120,7 @@ describe('System Prompt Router', () => {
     mockRequest.body = { prompt: 'Fresh start' };
     const handler = getHandler(router);
     expect(handler).toBeDefined();
-    
+
     await handler(mockRequest as Request, mockResponse as Response);
     const history = conversation.getHistory();
     expect(history).toHaveLength(1);

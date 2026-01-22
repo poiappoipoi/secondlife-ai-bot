@@ -26,7 +26,11 @@ export abstract class BaseAIProvider implements AIProvider {
   /**
    * Performs fetch request with timeout using AbortController
    */
-  protected async fetchWithTimeout(url: string, options: RequestInit, timeout: number): Promise<Response> {
+  protected async fetchWithTimeout(
+    url: string,
+    options: RequestInit,
+    timeout: number
+  ): Promise<Response> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
@@ -58,7 +62,7 @@ export abstract class BaseAIProvider implements AIProvider {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.config.apiKey}`,
+          Authorization: `Bearer ${this.config.apiKey}`,
         },
         body: JSON.stringify(body),
       },
@@ -85,7 +89,7 @@ export abstract class BaseAIProvider implements AIProvider {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.config.apiKey}`,
+          Authorization: `Bearer ${this.config.apiKey}`,
         },
         body: JSON.stringify(body),
       },
@@ -104,7 +108,9 @@ export abstract class BaseAIProvider implements AIProvider {
    * Parses Server-Sent Events (SSE) stream
    * Yields content deltas from data: lines
    */
-  protected async *parseSSEStream(reader: ReadableStreamDefaultReader<Uint8Array>): AsyncGenerator<string> {
+  protected async *parseSSEStream(
+    reader: ReadableStreamDefaultReader<Uint8Array>
+  ): AsyncGenerator<string> {
     const decoder = new TextDecoder();
     let buffer = '';
 
@@ -124,7 +130,7 @@ export abstract class BaseAIProvider implements AIProvider {
               return;
             }
             try {
-              const parsed = JSON.parse(data);
+              const parsed: unknown = JSON.parse(data);
               const content = this.extractContentFromSSE(parsed);
               if (content) {
                 yield content;
@@ -142,7 +148,7 @@ export abstract class BaseAIProvider implements AIProvider {
           const data = buffer.slice(6).trim();
           if (data !== '[DONE]') {
             try {
-              const parsed = JSON.parse(data);
+              const parsed: unknown = JSON.parse(data);
               const content = this.extractContentFromSSE(parsed);
               if (content) {
                 yield content;
@@ -166,11 +172,22 @@ export abstract class BaseAIProvider implements AIProvider {
     // Default implementation - subclasses should override
     if (typeof data === 'object' && data !== null) {
       const obj = data as Record<string, unknown>;
-      if (obj.choices?.[0]?.delta?.content) {
-        return String(obj.choices[0].delta.content);
-      }
-      if (obj.choices?.[0]?.message?.content) {
-        return String(obj.choices[0].message.content);
+      const choices = obj.choices;
+      if (
+        Array.isArray(choices) &&
+        choices[0] &&
+        typeof choices[0] === 'object' &&
+        choices[0] !== null
+      ) {
+        const choice = choices[0] as Record<string, unknown>;
+        const delta = choice.delta;
+        if (delta && typeof delta === 'object' && delta !== null && 'content' in delta) {
+          return String((delta as { content: unknown }).content);
+        }
+        const message = choice.message;
+        if (message && typeof message === 'object' && message !== null && 'content' in message) {
+          return String((message as { content: unknown }).content);
+        }
       }
     }
     return null;
@@ -180,12 +197,12 @@ export abstract class BaseAIProvider implements AIProvider {
    * Sends chat messages to AI provider and returns response
    */
   abstract chat(messages: Message[]): Promise<AIProviderResponse>;
-  
+
   /**
    * Streams chat messages from AI provider
    */
   abstract chatStream(messages: Message[]): AsyncIterable<string>;
-  
+
   /**
    * Parses provider-specific response format into standard format
    */

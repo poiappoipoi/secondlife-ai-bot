@@ -35,8 +35,8 @@ describe('Chat Router', () => {
     };
 
     mockResponse = {
-      status: mock((code: number) => mockResponse as Response),
-      send: mock((body: string) => mockResponse as Response),
+      status: mock((_code: number) => mockResponse as Response),
+      send: mock((_body: string) => mockResponse as Response),
     };
   });
 
@@ -46,18 +46,18 @@ describe('Chat Router', () => {
 
   const getHandler = (routerInstance: ReturnType<typeof createChatRouter>) => {
     const stack = (routerInstance as any).stack || [];
-    const route = stack.find((layer: any) => 
-      layer.route?.path === '/' && layer.route?.methods?.post
+    const route = stack.find(
+      (layer: any) => layer.route?.path === '/' && layer.route?.methods?.post
     );
     return route?.route?.stack?.[0]?.handle;
   };
 
   it('should return 400 if message is missing', async () => {
     mockRequest.body = {};
-    
+
     const handler = getHandler(router);
     expect(handler).toBeDefined();
-    
+
     await handler(mockRequest as Request, mockResponse as Response);
     expect(mockResponse.status).toHaveBeenCalledWith(400);
     expect(mockResponse.send).toHaveBeenCalledWith('Error: No message content received');
@@ -65,10 +65,10 @@ describe('Chat Router', () => {
 
   it('should return 400 if message is empty string', async () => {
     mockRequest.body = { message: '' };
-    
+
     const handler = getHandler(router);
     expect(handler).toBeDefined();
-    
+
     await handler(mockRequest as Request, mockResponse as Response);
     expect(mockResponse.status).toHaveBeenCalledWith(400);
     expect(mockResponse.send).toHaveBeenCalledWith('Error: No message content received');
@@ -84,10 +84,12 @@ describe('Chat Router', () => {
 
     const handler = getHandler(router);
     expect(handler).toBeDefined();
-    
+
     await handler(mockRequest as Request, mockResponse as Response);
     expect(saveSpy).toHaveBeenCalled();
-    expect(mockResponse.send).toHaveBeenCalledWith('【Memory cleared】Your conversation has been saved!');
+    expect(mockResponse.send).toHaveBeenCalledWith(
+      '【Memory cleared】Your conversation has been saved!'
+    );
     expect(conversation.getHistory()).toHaveLength(1);
 
     (conversation as any).logger.saveConversation = loggerSave;
@@ -103,10 +105,12 @@ describe('Chat Router', () => {
 
     const handler = getHandler(router);
     expect(handler).toBeDefined();
-    
+
     await handler(mockRequest as Request, mockResponse as Response);
     expect(saveSpy).toHaveBeenCalled();
-    expect(mockResponse.send).toHaveBeenCalledWith('【Memory cleared】Your conversation has been saved!');
+    expect(mockResponse.send).toHaveBeenCalledWith(
+      '【Memory cleared】Your conversation has been saved!'
+    );
 
     (conversation as any).logger.saveConversation = loggerSave;
   });
@@ -116,7 +120,7 @@ describe('Chat Router', () => {
 
     const handler = getHandler(router);
     expect(handler).toBeDefined();
-    
+
     await handler(mockRequest as Request, mockResponse as Response);
     expect(mockProvider.chat).toHaveBeenCalled();
     expect(mockResponse.send).toHaveBeenCalledWith('Test response');
@@ -128,7 +132,7 @@ describe('Chat Router', () => {
 
     const handler = getHandler(router);
     expect(handler).toBeDefined();
-    
+
     await handler(mockRequest as Request, mockResponse as Response);
     const history = conversation.getHistory();
     expect(history[history.length - 2].role).toBe('user');
@@ -149,7 +153,7 @@ describe('Chat Router', () => {
     mockRequest.body = { message: 'Should be blocked' };
     const handler = getHandler(customRouter);
     expect(handler).toBeDefined();
-    
+
     await handler(mockRequest as Request, mockResponse as Response);
     expect(mockResponse.status).toHaveBeenCalledWith(429);
     expect(mockResponse.send).toHaveBeenCalledWith(
@@ -169,7 +173,7 @@ describe('Chat Router', () => {
     mockRequest.body = { message: 'Test' };
     const handler = getHandler(router);
     expect(handler).toBeDefined();
-    
+
     await handler(mockRequest as Request, mockResponse as Response);
     expect(mockResponse.status).toHaveBeenCalledWith(500);
     expect(mockResponse.send).toHaveBeenCalledWith(expect.stringContaining('API error'));
@@ -187,7 +191,7 @@ describe('Chat Router', () => {
     mockRequest.body = { message: 'Test' };
     const handler = getHandler(router);
     expect(handler).toBeDefined();
-    
+
     await handler(mockRequest as Request, mockResponse as Response);
     expect(mockResponse.status).toHaveBeenCalledWith(401);
     expect(mockResponse.send).toHaveBeenCalledWith(
@@ -208,7 +212,7 @@ describe('Chat Router', () => {
     mockRequest.body = { message: 'Failing message' };
     const handler = getHandler(router);
     expect(handler).toBeDefined();
-    
+
     await handler(mockRequest as Request, mockResponse as Response);
     const history = conversation.getHistory();
     expect(history[history.length - 1].content).toBe('Previous');
@@ -226,7 +230,7 @@ describe('Chat Router', () => {
     mockRequest.body = { message: 'Test' };
     const handler = getHandler(router);
     expect(handler).toBeDefined();
-    
+
     await handler(mockRequest as Request, mockResponse as Response);
     expect(mockResponse.status).toHaveBeenCalledWith(500);
     expect(mockResponse.send).toHaveBeenCalledWith('Connection error');

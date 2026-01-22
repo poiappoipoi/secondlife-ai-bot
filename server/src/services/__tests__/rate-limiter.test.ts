@@ -22,7 +22,7 @@ describe('RateLimiterService', () => {
     it('should block requests exceeding limit', () => {
       const maxRequests = 40;
       const customLimiter = new RateLimiterService();
-      
+
       for (let i = 0; i < maxRequests; i++) {
         const status = customLimiter.check();
         expect(status.allowed).toBe(true);
@@ -36,9 +36,9 @@ describe('RateLimiterService', () => {
     });
 
     it('should increment counter only when allowed', () => {
-      const maxRequests = 2;
+      const _maxRequests = 2;
       const customLimiter = new RateLimiterService();
-      
+
       const first = customLimiter.check();
       expect(first.allowed).toBe(true);
       expect(first.current).toBe(1);
@@ -55,14 +55,14 @@ describe('RateLimiterService', () => {
     it('should reset window after timeout', async () => {
       const shortWindowMs = 100;
       const customLimiter = new RateLimiterService();
-      
+
       customLimiter.check();
       customLimiter.check();
-      
+
       const statusBefore = customLimiter.getStatus();
       expect(statusBefore.current).toBe(2);
 
-      await new Promise(resolve => setTimeout(resolve, shortWindowMs + 50));
+      await new Promise((resolve) => setTimeout(resolve, shortWindowMs + 50));
 
       const statusAfter = customLimiter.check();
       expect(statusAfter.current).toBe(1);
@@ -102,7 +102,7 @@ describe('RateLimiterService', () => {
     it('should show blocked status when limit reached', () => {
       const maxRequests = 40;
       const customLimiter = new RateLimiterService();
-      
+
       for (let i = 0; i < maxRequests; i++) {
         customLimiter.check();
       }

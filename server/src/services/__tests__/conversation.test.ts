@@ -67,7 +67,7 @@ describe('ConversationService', () => {
       conversation.addUserMessage('Hello');
       conversation.addAssistantMessage('Hi');
       expect(conversation.getHistory()).toHaveLength(3);
-      
+
       conversation.removeLastMessage();
       const history = conversation.getHistory();
       expect(history).toHaveLength(2);
@@ -93,7 +93,7 @@ describe('ConversationService', () => {
       logger.saveConversation = saveSpy as typeof logger.saveConversation;
 
       await conversation.setSystemPrompt('New persona');
-      
+
       expect(saveSpy).toHaveBeenCalledTimes(1);
       expect(conversation.getSystemPrompt()).toBe('New persona');
       const history = conversation.getHistory();
@@ -107,7 +107,7 @@ describe('ConversationService', () => {
     it('should preserve new system prompt after reset', async () => {
       await conversation.setSystemPrompt('Custom prompt');
       await conversation.saveAndReset('Test');
-      
+
       expect(conversation.getSystemPrompt()).toBe('Custom prompt');
       const history = conversation.getHistory();
       expect(history[0].content).toBe('Custom prompt');
@@ -128,7 +128,7 @@ describe('ConversationService', () => {
       expect(saveSpy).toHaveBeenCalledTimes(1);
       const savedHistory = saveSpy.mock.calls[0][0] as Message[];
       expect(savedHistory).toHaveLength(3);
-      
+
       const history = conversation.getHistory();
       expect(history).toHaveLength(1);
       expect(history[0].role).toBe('system');
@@ -153,7 +153,7 @@ describe('ConversationService', () => {
     it('should preserve system prompt after reset', async () => {
       const originalPrompt = conversation.getSystemPrompt();
       await conversation.saveAndReset('Test');
-      
+
       expect(conversation.getSystemPrompt()).toBe(originalPrompt);
       const history = conversation.getHistory();
       expect(history[0].content).toBe(originalPrompt);
@@ -162,19 +162,19 @@ describe('ConversationService', () => {
 
   describe('inactivity timer', () => {
     it('should reset timer on user message', async () => {
-      const originalTimeout = 100;
+      const _originalTimeout = 100;
       const conversationWithShortTimeout = new ConversationService(logger);
-      
+
       const saveSpy = mock(() => Promise.resolve());
       const loggerSave = logger.saveConversation;
       logger.saveConversation = saveSpy as typeof logger.saveConversation;
 
       conversationWithShortTimeout.addUserMessage('First');
-      
-      await new Promise(resolve => setTimeout(resolve, 50));
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
       conversationWithShortTimeout.addUserMessage('Second');
-      
-      await new Promise(resolve => setTimeout(resolve, 50));
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
       expect(saveSpy).not.toHaveBeenCalled();
 
       conversationWithShortTimeout.destroy();

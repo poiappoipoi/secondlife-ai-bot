@@ -70,11 +70,7 @@ describe('BaseAIProvider', () => {
       global.fetch = mock(() => new Promise(() => {}));
 
       await expect(
-        provider['fetchWithTimeout'](
-          'https://api.test.com/test',
-          { method: 'GET' },
-          10
-        )
+        provider['fetchWithTimeout']('https://api.test.com/test', { method: 'GET' }, 10)
       ).rejects.toThrow('Request timeout after 10ms');
     });
 
@@ -82,11 +78,7 @@ describe('BaseAIProvider', () => {
       global.fetch = mock(() => Promise.reject(new Error('Network error')));
 
       await expect(
-        provider['fetchWithTimeout'](
-          'https://api.test.com/test',
-          { method: 'GET' },
-          5000
-        )
+        provider['fetchWithTimeout']('https://api.test.com/test', { method: 'GET' }, 5000)
       ).rejects.toThrow('Network error');
     });
   });
@@ -124,9 +116,9 @@ describe('BaseAIProvider', () => {
 
       global.fetch = mock(() => Promise.resolve(mockResponse));
 
-      await expect(
-        provider['makeRequest']<{ content: string }>('/test', {})
-      ).rejects.toThrow('HTTP 401 Unauthorized: Unauthorized');
+      await expect(provider['makeRequest']<{ content: string }>('/test', {})).rejects.toThrow(
+        'HTTP 401 Unauthorized: Unauthorized'
+      );
     });
 
     it('should handle error response with text', async () => {
@@ -137,9 +129,9 @@ describe('BaseAIProvider', () => {
 
       global.fetch = mock(() => Promise.resolve(mockResponse));
 
-      await expect(
-        provider['makeRequest']<{ content: string }>('/test', {})
-      ).rejects.toThrow('HTTP 400 Bad Request: Custom error message');
+      await expect(provider['makeRequest']<{ content: string }>('/test', {})).rejects.toThrow(
+        'HTTP 400 Bad Request: Custom error message'
+      );
     });
 
     it('should use timeout from config', async () => {

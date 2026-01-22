@@ -126,10 +126,7 @@ export const config: AppConfig = {
   },
   conversation: {
     inactivityTimeoutMs: parseNumber(optionalEnv('INACTIVITY_TIMEOUT_MS', '3600000'), 3600000),
-    defaultSystemPrompt: optionalEnv(
-      'DEFAULT_SYSTEM_PROMPT',
-      ''
-    ),
+    defaultSystemPrompt: optionalEnv('DEFAULT_SYSTEM_PROMPT', ''),
     maxHistoryMessages: parseNumber(optionalEnv('CONVERSATION_MAX_HISTORY_MESSAGES', '50'), 50),
   },
   logging: {

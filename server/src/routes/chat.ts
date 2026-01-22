@@ -19,80 +19,87 @@ export function createChatRouter(
 ): Router {
   const router = Router();
 
-  router.post('/', async (req: Request<object, string, ChatRequest>, res: Response): Promise<void> => {
-    const rateLimit = rateLimiter.check();
-    if (!rateLimit.allowed) {
-      console.log(`!!! Request blocked: rate limit reached (${rateLimit.current}/${rateLimit.max}) !!!`);
-      res.status(429).send(
-        `API request limit reached. Maximum ${rateLimit.max} requests per hour. ` +
-        `Current: ${rateLimit.current}/${rateLimit.max}`
-      );
-      return;
-    }
+  router.post(
+    '/',
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
+    async (req: Request<object, string, ChatRequest>, res: Response): Promise<void> => {
+      const rateLimit = rateLimiter.check();
+      if (!rateLimit.allowed) {
+        console.log(
+          `!!! Request blocked: rate limit reached (${rateLimit.current}/${rateLimit.max}) !!!`
+        );
+        res
+          .status(429)
+          .send(
+            `API request limit reached. Maximum ${rateLimit.max} requests per hour. ` +
+              `Current: ${rateLimit.current}/${rateLimit.max}`
+          );
+        return;
+      }
 
-    const userMessage = req.body.message;
+      const userMessage = req.body.message;
 
-    if (!userMessage) {
-      res.status(400).send('Error: No message content received');
-      return;
-    }
+      if (!userMessage) {
+        res.status(400).send('Error: No message content received');
+        return;
+      }
 
-    console.log(`\n[Received message]: ${userMessage} (Request ${rateLimit.current} this hour)`);
+      console.log(`\n[Received message]: ${userMessage} (Request ${rateLimit.current} this hour)`);
 
-    const normalizedMessage = userMessage.trim().toLowerCase();
-    if (normalizedMessage === 'reset' || userMessage === '清除') {
-      await conversation.saveAndReset('Manual reset command');
-      res.send('【Memory cleared】Your conversation has been saved!');
-      return;
-    }
+      const normalizedMessage = userMessage.trim().toLowerCase();
+      if (normalizedMessage === 'reset' || userMessage === '清除') {
+        await conversation.saveAndReset('Manual reset command');
+        res.send('【Memory cleared】Your conversation has been saved!');
+        return;
+      }
 
-    try {
-      conversation.addUserMessage(userMessage);
-
-      const provider = getConfiguredProvider();
-      
-      // Try streaming first for faster response time
-      let fullContent = '';
       try {
-        const stream = provider.chatStream(conversation.getHistory());
-        for await (const chunk of stream) {
-          fullContent += chunk;
+        conversation.addUserMessage(userMessage);
+
+        const provider = getConfiguredProvider();
+
+        // Try streaming first for faster response time
+        let fullContent = '';
+        try {
+          const stream = provider.chatStream(conversation.getHistory());
+          for await (const chunk of stream) {
+            fullContent += chunk;
+          }
+          console.log(`[AI response]: ${fullContent}`);
+          conversation.addAssistantMessage(fullContent);
+          res.send(fullContent);
+        } catch {
+          // Fallback to non-streaming if streaming fails
+          console.log('[Streaming failed, falling back to non-streaming]');
+          const response = await provider.chat(conversation.getHistory());
+          console.log(`[AI response]: ${response.content}`);
+          conversation.addAssistantMessage(response.content);
+          res.send(response.content);
         }
-        console.log(`[AI response]: ${fullContent}`);
-        conversation.addAssistantMessage(fullContent);
-        res.send(fullContent);
-      } catch (streamError) {
-        // Fallback to non-streaming if streaming fails
-        console.log('[Streaming failed, falling back to non-streaming]');
-        const response = await provider.chat(conversation.getHistory());
-        console.log(`[AI response]: ${response.content}`);
-        conversation.addAssistantMessage(response.content);
-        res.send(response.content);
-      }
+      } catch (error) {
+        console.error('!!! Error occurred !!!');
 
-    } catch (error) {
-      console.error('!!! Error occurred !!!');
+        conversation.removeLastMessage();
 
-      conversation.removeLastMessage();
+        if (error instanceof Error) {
+          console.error(error.message);
 
-      if (error instanceof Error) {
-        console.error(error.message);
-        
-        // Check if error message contains HTTP status code
-        const httpErrorMatch = error.message.match(/HTTP (\d+) (.+?):/);
-        if (httpErrorMatch) {
-          const statusCode = parseInt(httpErrorMatch[1], 10);
-          const statusText = httpErrorMatch[2];
-          const errorMsg = error.message.replace(/^HTTP \d+ .+?: /, '');
-          res.status(statusCode).send(`API error (${statusCode} ${statusText}): ${errorMsg}`);
+          // Check if error message contains HTTP status code
+          const httpErrorMatch = error.message.match(/HTTP (\d+) (.+?):/);
+          if (httpErrorMatch) {
+            const statusCode = parseInt(httpErrorMatch[1], 10);
+            const statusText = httpErrorMatch[2];
+            const errorMsg = error.message.replace(/^HTTP \d+ .+?: /, '');
+            res.status(statusCode).send(`API error (${statusCode} ${statusText}): ${errorMsg}`);
+          } else {
+            res.status(500).send(`API error: ${error.message}`);
+          }
         } else {
-          res.status(500).send(`API error: ${error.message}`);
+          res.status(500).send('Connection error');
         }
-      } else {
-        res.status(500).send('Connection error');
       }
     }
-  });
+  );
 
   return router;
 }

@@ -22,10 +22,7 @@ describe('LoggerService', () => {
 
   it('should create logs directory if it does not exist', async () => {
     logger = new LoggerService();
-    await logger.saveConversation(
-      [{ role: 'system', content: 'Test' }],
-      'Test reason'
-    );
+    await logger.saveConversation([{ role: 'system', content: 'Test' }], 'Test reason');
     expect(existsSync(path.join(process.cwd(), 'logs'))).toBe(true);
   });
 
@@ -41,7 +38,7 @@ describe('LoggerService', () => {
 
     const logsDir = path.join(process.cwd(), 'logs');
     expect(existsSync(logsDir)).toBe(true);
-    
+
     const files = Bun.readdirSync(logsDir);
     expect(files.length).toBeGreaterThan(0);
   });
@@ -59,10 +56,10 @@ describe('LoggerService', () => {
     const files = Bun.readdirSync(logsDir);
     const latestFile = files[files.length - 1] as string;
     const filePath = path.join(logsDir, latestFile);
-    
+
     const content = await Bun.file(filePath).text();
     const parsed = JSON.parse(content);
-    
+
     expect(parsed).toHaveLength(2);
     expect(parsed[0].role).toBe('system');
     expect(parsed[1].role).toBe('user');
@@ -76,15 +73,12 @@ describe('LoggerService', () => {
   it('should handle save errors gracefully', async () => {
     logger = new LoggerService();
     const invalidPath = '/invalid/path/that/does/not/exist';
-    
+
     const originalLogsDir = (logger as any).logsDir;
     (logger as any).logsDir = invalidPath;
-    
-    await logger.saveConversation(
-      [{ role: 'system', content: 'Test' }],
-      'Error test'
-    );
-    
+
+    await logger.saveConversation([{ role: 'system', content: 'Test' }], 'Error test');
+
     (logger as any).logsDir = originalLogsDir;
   });
 });

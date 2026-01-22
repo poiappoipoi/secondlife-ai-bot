@@ -91,20 +91,45 @@ export class XAIProvider extends BaseAIProvider {
   protected extractContentFromSSE(data: unknown): string | null {
     if (typeof data === 'object' && data !== null) {
       const obj = data as Record<string, unknown>;
-      
+
       // X.AI uses choices[0].delta.content format
-      if (obj.choices?.[0]?.delta?.content) {
-        return String(obj.choices[0].delta.content);
+      const choices = obj.choices;
+      if (
+        Array.isArray(choices) &&
+        choices[0] &&
+        typeof choices[0] === 'object' &&
+        choices[0] !== null
+      ) {
+        const choice = choices[0] as Record<string, unknown>;
+        const delta = choice.delta;
+        if (delta && typeof delta === 'object' && delta !== null && 'content' in delta) {
+          return String((delta as { content: unknown }).content);
+        }
+        const message = choice.message;
+        if (message && typeof message === 'object' && message !== null && 'content' in message) {
+          return String((message as { content: unknown }).content);
+        }
       }
-      
-      // Fallback to choices[0].message.content (for non-delta chunks)
-      if (obj.choices?.[0]?.message?.content) {
-        return String(obj.choices[0].message.content);
-      }
-      
+
       // X.AI also supports output[] format
-      if (obj.output?.[0]?.content?.[0]?.text) {
-        return String(obj.output[0].content[0].text);
+      const output = obj.output;
+      if (
+        Array.isArray(output) &&
+        output[0] &&
+        typeof output[0] === 'object' &&
+        output[0] !== null
+      ) {
+        const outputItem = output[0] as Record<string, unknown>;
+        const content = outputItem.content;
+        if (
+          Array.isArray(content) &&
+          content[0] &&
+          typeof content[0] === 'object' &&
+          content[0] !== null &&
+          'text' in content[0]
+        ) {
+          return String((content[0] as { text: unknown }).text);
+        }
       }
     }
     return null;
@@ -126,11 +151,13 @@ export class XAIProvider extends BaseAIProvider {
 
     return {
       content,
-      usage: data.usage ? {
-        promptTokens: data.usage.prompt_tokens,
-        completionTokens: data.usage.completion_tokens,
-        totalTokens: data.usage.total_tokens,
-      } : undefined,
+      usage: data.usage
+        ? {
+            promptTokens: data.usage.prompt_tokens,
+            completionTokens: data.usage.completion_tokens,
+            totalTokens: data.usage.total_tokens,
+          }
+        : undefined,
     };
   }
 }

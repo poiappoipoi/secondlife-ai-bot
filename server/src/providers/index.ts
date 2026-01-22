@@ -17,12 +17,7 @@ export function createProvider(type?: ProviderType): AIProvider {
 
   switch (providerType) {
     case 'xai':
-      return new XAIProvider(
-        config.ai.xai.apiKey,
-        config.ai.xai.model,
-        maxTokens,
-        timeout
-      );
+      return new XAIProvider(config.ai.xai.apiKey, config.ai.xai.model, maxTokens, timeout);
     case 'ollama':
       return new OllamaProvider(
         config.ai.ollama.baseUrl,
@@ -31,7 +26,7 @@ export function createProvider(type?: ProviderType): AIProvider {
         timeout
       );
     default:
-      throw new Error(`Unknown provider type: ${providerType}`);
+      throw new Error(`Unknown provider type: ${String(providerType)}`);
   }
 }
 
