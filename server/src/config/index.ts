@@ -94,6 +94,7 @@ export interface AppConfig {
   conversation: {
     inactivityTimeoutMs: number;
     defaultSystemPrompt: string;
+    maxHistoryMessages: number;
   };
   logging: {
     timezone: string;
@@ -129,6 +130,7 @@ export const config: AppConfig = {
       'DEFAULT_SYSTEM_PROMPT',
       ''
     ),
+    maxHistoryMessages: parseNumber(optionalEnv('CONVERSATION_MAX_HISTORY_MESSAGES', '50'), 50),
   },
   logging: {
     timezone: optionalEnv('LOG_TIMEZONE', 'UTC'),

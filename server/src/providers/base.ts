@@ -74,9 +74,117 @@ export abstract class BaseAIProvider implements AIProvider {
   }
 
   /**
+   * Makes authenticated streaming POST request to AI provider API
+   * Returns the response stream for parsing
+   */
+  protected async makeStreamRequest(endpoint: string, body: unknown): Promise<Response> {
+    const url = `${this.config.baseUrl}${endpoint}`;
+    const response = await this.fetchWithTimeout(
+      url,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.config.apiKey}`,
+        },
+        body: JSON.stringify(body),
+      },
+      this.config.timeout
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      throw new Error(`HTTP ${response.status} ${response.statusText}: ${errorText}`);
+    }
+
+    return response;
+  }
+
+  /**
+   * Parses Server-Sent Events (SSE) stream
+   * Yields content deltas from data: lines
+   */
+  protected async *parseSSEStream(reader: ReadableStreamDefaultReader<Uint8Array>): AsyncGenerator<string> {
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6).trim();
+            if (data === '[DONE]') {
+              return;
+            }
+            try {
+              const parsed = JSON.parse(data);
+              const content = this.extractContentFromSSE(parsed);
+              if (content) {
+                yield content;
+              }
+            } catch {
+              // Ignore invalid JSON in SSE stream
+            }
+          }
+        }
+      }
+
+      // Process remaining buffer
+      if (buffer.trim()) {
+        if (buffer.startsWith('data: ')) {
+          const data = buffer.slice(6).trim();
+          if (data !== '[DONE]') {
+            try {
+              const parsed = JSON.parse(data);
+              const content = this.extractContentFromSSE(parsed);
+              if (content) {
+                yield content;
+              }
+            } catch {
+              // Ignore invalid JSON
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  }
+
+  /**
+   * Extracts content delta from SSE data object
+   * Override in subclasses for provider-specific formats
+   */
+  protected extractContentFromSSE(data: unknown): string | null {
+    // Default implementation - subclasses should override
+    if (typeof data === 'object' && data !== null) {
+      const obj = data as Record<string, unknown>;
+      if (obj.choices?.[0]?.delta?.content) {
+        return String(obj.choices[0].delta.content);
+      }
+      if (obj.choices?.[0]?.message?.content) {
+        return String(obj.choices[0].message.content);
+      }
+    }
+    return null;
+  }
+
+  /**
    * Sends chat messages to AI provider and returns response
    */
   abstract chat(messages: Message[]): Promise<AIProviderResponse>;
+  
+  /**
+   * Streams chat messages from AI provider
+   */
+  abstract chatStream(messages: Message[]): AsyncIterable<string>;
   
   /**
    * Parses provider-specific response format into standard format

@@ -50,13 +50,25 @@ export function createChatRouter(
       conversation.addUserMessage(userMessage);
 
       const provider = getConfiguredProvider();
-      const response = await provider.chat(conversation.getHistory());
-
-      console.log(`[AI response]: ${response.content}`);
-
-      conversation.addAssistantMessage(response.content);
-
-      res.send(response.content);
+      
+      // Try streaming first for faster response time
+      let fullContent = '';
+      try {
+        const stream = provider.chatStream(conversation.getHistory());
+        for await (const chunk of stream) {
+          fullContent += chunk;
+        }
+        console.log(`[AI response]: ${fullContent}`);
+        conversation.addAssistantMessage(fullContent);
+        res.send(fullContent);
+      } catch (streamError) {
+        // Fallback to non-streaming if streaming fails
+        console.log('[Streaming failed, falling back to non-streaming]');
+        const response = await provider.chat(conversation.getHistory());
+        console.log(`[AI response]: ${response.content}`);
+        conversation.addAssistantMessage(response.content);
+        res.send(response.content);
+      }
 
     } catch (error) {
       console.error('!!! Error occurred !!!');

@@ -15,10 +15,12 @@ export class ConversationService {
   private inactivityTimer: NodeJS.Timeout | null = null;
   private readonly logger: LoggerService;
   private readonly inactivityTimeoutMs: number;
+  private readonly maxHistoryMessages: number;
 
   constructor(logger: LoggerService) {
     this.logger = logger;
     this.inactivityTimeoutMs = config.conversation.inactivityTimeoutMs;
+    this.maxHistoryMessages = config.conversation.maxHistoryMessages;
     this.systemPrompt = config.conversation.defaultSystemPrompt;
     this.history = [{ role: 'system', content: this.systemPrompt }];
   }
@@ -46,10 +48,31 @@ export class ConversationService {
   }
 
   /**
-   * Adds assistant message to history
+   * Adds assistant message to history and trims if needed
    */
   addAssistantMessage(content: string): void {
     this.history.push({ role: 'assistant', content });
+    this.trimHistory();
+  }
+
+  /**
+   * Trims conversation history to keep only recent messages
+   * Always keeps system prompt (first message) and most recent N message pairs
+   */
+  private trimHistory(): void {
+    if (this.history.length <= this.maxHistoryMessages + 1) {
+      return;
+    }
+
+    try {
+      // Keep system prompt (first message) and most recent message pairs
+      const systemMessage = this.history[0];
+      const recentMessages = this.history.slice(-this.maxHistoryMessages);
+      this.history = [systemMessage, ...recentMessages];
+    } catch (error) {
+      // Log but continue - trimming is non-critical
+      console.error('Error trimming history:', error);
+    }
   }
 
   /**
@@ -75,12 +98,17 @@ export class ConversationService {
   /**
    * Saves conversation to log file and resets history
    * Preserves system prompt across resets
+   * Logging is fire-and-forget to avoid blocking
    */
   async saveAndReset(reason: string): Promise<void> {
+    // Fire-and-forget logging - don't block on file I/O
     if (this.history.length > 1) {
-      await this.logger.saveConversation(this.history, reason);
+      this.logger.saveConversation(this.history, reason).catch((error) => {
+        console.error('Failed to save conversation log:', error);
+      });
     }
 
+    // Reset immediately without waiting for logging
     this.history = [{ role: 'system', content: this.systemPrompt }];
     this.clearInactivityTimer();
     console.log('--- Memory reset ---');

@@ -107,6 +107,120 @@ export class OllamaProvider implements AIProvider {
   }
 
   /**
+   * Streams chat messages from Ollama API
+   * Filters out empty system messages to allow modelfile's SYSTEM directive to work
+   */
+  async *chatStream(messages: Message[]): AsyncIterable<string> {
+    const filteredMessages = messages.filter((msg) => {
+      if (msg.role !== 'system') {
+        return true;
+      }
+      return msg.content.trim().length > 0;
+    });
+
+    const url = `${this.config.baseUrl}/chat/completions`;
+    const response = await this.fetchWithTimeout(
+      url,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: filteredMessages,
+          model: this.config.model,
+          stream: true,
+        }),
+      },
+      this.config.timeout
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      throw new Error(`HTTP ${response.status} ${response.statusText}: ${errorText}`);
+    }
+
+    if (!response.body) {
+      throw new Error('Response body is null');
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.trim()) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6).trim();
+              if (data === '[DONE]') {
+                return;
+              }
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.choices?.[0]?.delta?.content) {
+                  yield String(parsed.choices[0].delta.content);
+                }
+              } catch {
+                // Ignore invalid JSON in stream
+              }
+            } else {
+              // Ollama may also send JSON directly without "data: " prefix
+              try {
+                const parsed = JSON.parse(line);
+                if (parsed.choices?.[0]?.delta?.content) {
+                  yield String(parsed.choices[0].delta.content);
+                }
+                if (parsed.choices?.[0]?.finish_reason === 'stop') {
+                  return;
+                }
+              } catch {
+                // Ignore invalid JSON
+              }
+            }
+          }
+        }
+      }
+
+      // Process remaining buffer
+      if (buffer.trim()) {
+        if (buffer.startsWith('data: ')) {
+          const data = buffer.slice(6).trim();
+          if (data !== '[DONE]') {
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.choices?.[0]?.delta?.content) {
+                yield String(parsed.choices[0].delta.content);
+              }
+            } catch {
+              // Ignore invalid JSON
+            }
+          }
+        } else {
+          try {
+            const parsed = JSON.parse(buffer);
+            if (parsed.choices?.[0]?.delta?.content) {
+              yield String(parsed.choices[0].delta.content);
+            }
+          } catch {
+            // Ignore invalid JSON
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  }
+
+  /**
    * Parses Ollama response into standard format
    */
   protected parseResponse(data: OllamaResponse): AIProviderResponse {

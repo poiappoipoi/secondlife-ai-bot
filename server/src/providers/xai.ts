@@ -67,6 +67,50 @@ export class XAIProvider extends BaseAIProvider {
   }
 
   /**
+   * Streams chat messages from X.AI Grok API
+   */
+  async *chatStream(messages: Message[]): AsyncIterable<string> {
+    const response = await this.makeStreamRequest('/chat/completions', {
+      messages,
+      model: this.config.model,
+      stream: true,
+      max_tokens: this.config.maxTokens,
+    });
+
+    if (!response.body) {
+      throw new Error('Response body is null');
+    }
+
+    const reader = response.body.getReader();
+    yield* this.parseSSEStream(reader);
+  }
+
+  /**
+   * Extracts content delta from X.AI SSE data format
+   */
+  protected extractContentFromSSE(data: unknown): string | null {
+    if (typeof data === 'object' && data !== null) {
+      const obj = data as Record<string, unknown>;
+      
+      // X.AI uses choices[0].delta.content format
+      if (obj.choices?.[0]?.delta?.content) {
+        return String(obj.choices[0].delta.content);
+      }
+      
+      // Fallback to choices[0].message.content (for non-delta chunks)
+      if (obj.choices?.[0]?.message?.content) {
+        return String(obj.choices[0].message.content);
+      }
+      
+      // X.AI also supports output[] format
+      if (obj.output?.[0]?.content?.[0]?.text) {
+        return String(obj.output[0].content[0].text);
+      }
+    }
+    return null;
+  }
+
+  /**
    * Parses X.AI response - handles both output[] and choices[] formats
    */
   protected parseResponse(data: XAIResponse): AIProviderResponse {

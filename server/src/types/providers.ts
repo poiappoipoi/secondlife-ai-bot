@@ -33,6 +33,7 @@ export interface AIProvider {
   readonly name: string;
   readonly isConfigured: boolean;
   chat(messages: Message[]): Promise<AIProviderResponse>;
+  chatStream(messages: Message[]): AsyncIterable<string>;
 }
 
 /**
