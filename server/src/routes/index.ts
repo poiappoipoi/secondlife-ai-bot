@@ -1,2 +1,2 @@
-export { createChatRouter } from './chat.js';
-export { createSystemPromptRouter } from './system-prompt.js';
+export { createChatRouter } from './chat';
+export { createSystemPromptRouter } from './system-prompt';

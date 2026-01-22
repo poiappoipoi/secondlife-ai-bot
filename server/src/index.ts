@@ -1,8 +1,8 @@
 /**
  * Server entry point - initializes and starts the Express application
  */
-import { createApp } from './app.js';
-import { config } from './config/index.js';
+import { createApp } from './app';
+import { config } from './config/index';
 
 const { app } = createApp();
 const { port } = config.server;

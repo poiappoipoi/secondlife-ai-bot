@@ -1,9 +1,9 @@
 /**
  * X.AI Grok provider implementation
  */
-import { BaseAIProvider } from './base.js';
-import type { Message } from '../types/index.js';
-import type { AIProviderResponse } from '../types/index.js';
+import { BaseAIProvider } from './base';
+import type { Message } from '../types/index';
+import type { AIProviderResponse } from '../types/index';
 
 /**
  * X.AI API response format (choices array)

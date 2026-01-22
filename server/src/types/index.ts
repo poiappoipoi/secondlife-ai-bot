@@ -1,3 +1,3 @@
-export * from './conversation.js';
-export * from './api.js';
-export * from './providers.js';
+export * from './conversation';
+export * from './api';
+export * from './providers';

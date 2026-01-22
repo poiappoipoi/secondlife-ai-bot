@@ -2,10 +2,10 @@
  * Chat route handler - processes user messages and returns AI responses
  */
 import { Router, Request, Response } from 'express';
-import type { ChatRequest } from '../types/index.js';
-import { ConversationService } from '../services/conversation.js';
-import { RateLimiterService } from '../services/rate-limiter.js';
-import { getConfiguredProvider } from '../providers/index.js';
+import type { ChatRequest } from '../types/index';
+import { ConversationService } from '../services/conversation';
+import { RateLimiterService } from '../services/rate-limiter';
+import { getConfiguredProvider } from '../providers/index';
 
 /**
  * Creates Express router for chat endpoint

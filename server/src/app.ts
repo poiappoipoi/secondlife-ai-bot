@@ -2,8 +2,8 @@
  * Express application factory - sets up middleware, routes, and services
  */
 import express, { Application } from 'express';
-import { createChatRouter, createSystemPromptRouter } from './routes/index.js';
-import { ConversationService, RateLimiterService, LoggerService } from './services/index.js';
+import { createChatRouter, createSystemPromptRouter } from './routes/index';
+import { ConversationService, RateLimiterService, LoggerService } from './services/index';
 
 /**
  * Container for all application services

@@ -4,7 +4,7 @@
  */
 import path from 'path';
 import { readFileSync, existsSync } from 'fs';
-import type { ProviderType } from '../types/index.js';
+import type { ProviderType } from '../types/index';
 
 /**
  * Manually loads key.env file to override .env values

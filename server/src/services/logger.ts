@@ -3,8 +3,8 @@
  */
 import path from 'path';
 import { mkdir } from 'fs/promises';
-import type { Message } from '../types/index.js';
-import { config } from '../config/index.js';
+import type { Message } from '../types/index';
+import { config } from '../config/index';
 
 /**
  * Generates filename based on current time in configured timezone

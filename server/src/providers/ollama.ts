@@ -1,8 +1,8 @@
 /**
  * Ollama provider implementation for local LLM
  */
-import type { Message } from '../types/index.js';
-import type { AIProvider, AIProviderConfig, AIProviderResponse } from '../types/index.js';
+import type { Message } from '../types/index';
+import type { AIProvider, AIProviderConfig, AIProviderResponse } from '../types/index';
 
 /**
  * Ollama OpenAI-compatible API response format
@@ -102,7 +102,7 @@ export class OllamaProvider implements AIProvider {
       throw new Error(`HTTP ${response.status} ${response.statusText}: ${errorText}`);
     }
 
-    const data = await response.json() as OllamaResponse;
+    const data = await responseon() as OllamaResponse;
     return this.parseResponse(data);
   }
 

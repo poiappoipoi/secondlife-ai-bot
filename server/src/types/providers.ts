@@ -1,7 +1,7 @@
 /**
  * AI provider type definitions and interfaces
  */
-import type { Message } from './conversation.js';
+import type { Message } from './conversation';
 
 /**
  * Configuration required for AI provider initialization

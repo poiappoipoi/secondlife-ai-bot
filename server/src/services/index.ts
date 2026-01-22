@@ -1,3 +1,3 @@
-export { RateLimiterService } from './rate-limiter.js';
-export { LoggerService } from './logger.js';
-export { ConversationService } from './conversation.js';
+export { RateLimiterService } from './rate-limiter';
+export { LoggerService } from './logger';
+export { ConversationService } from './conversation';

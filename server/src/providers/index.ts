@@ -1,10 +1,10 @@
 /**
  * AI provider factory - creates provider instances based on configuration
  */
-import type { AIProvider, ProviderType } from '../types/index.js';
-import { XAIProvider } from './xai.js';
-import { OllamaProvider } from './ollama.js';
-import { config } from '../config/index.js';
+import type { AIProvider, ProviderType } from '../types/index';
+import { XAIProvider } from './xai';
+import { OllamaProvider } from './ollama';
+import { config } from '../config/index';
 
 /**
  * Creates an AI provider instance of the specified type
@@ -47,5 +47,5 @@ export function getConfiguredProvider(): AIProvider {
   return provider;
 }
 
-export { XAIProvider } from './xai.js';
-export { OllamaProvider } from './ollama.js';
+export { XAIProvider } from './xai';
+export { OllamaProvider } from './ollama';

@@ -1,8 +1,8 @@
 /**
  * Base class for AI providers - provides common functionality for HTTP requests with timeout
  */
-import type { Message } from '../types/index.js';
-import type { AIProvider, AIProviderConfig, AIProviderResponse } from '../types/index.js';
+import type { Message } from '../types/index';
+import type { AIProvider, AIProviderConfig, AIProviderResponse } from '../types/index';
 
 /**
  * Abstract base class for AI provider implementations
@@ -70,7 +70,7 @@ export abstract class BaseAIProvider implements AIProvider {
       throw new Error(`HTTP ${response.status} ${response.statusText}: ${errorText}`);
     }
 
-    return response.json() as Promise<T>;
+    return responseon() as Promise<T>;
   }
 
   /**

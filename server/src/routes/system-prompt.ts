@@ -2,8 +2,8 @@
  * System prompt route handler - updates AI persona/behavior
  */
 import { Router, Request, Response } from 'express';
-import type { SetSystemPromptRequest } from '../types/index.js';
-import { ConversationService } from '../services/conversation.js';
+import type { SetSystemPromptRequest } from '../types/index';
+import { ConversationService } from '../services/conversation';
 
 /**
  * Creates Express router for system prompt endpoint

@@ -1,8 +1,8 @@
 /**
  * Rate limiter service - implements sliding window rate limiting
  */
-import { config } from '../config/index.js';
-import type { RateLimitStatus } from '../types/index.js';
+import { config } from '../config/index';
+import type { RateLimitStatus } from '../types/index';
 
 /**
  * Implements sliding window rate limiting

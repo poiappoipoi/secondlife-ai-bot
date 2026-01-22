@@ -1,9 +1,9 @@
 /**
  * Conversation service - manages chat history, system prompt, and auto-save on inactivity
  */
-import type { Message } from '../types/index.js';
-import { config } from '../config/index.js';
-import { LoggerService } from './logger.js';
+import type { Message } from '../types/index';
+import { config } from '../config/index';
+import { LoggerService } from './logger';
 
 /**
  * Manages conversation state including message history and system prompt
