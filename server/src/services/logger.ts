@@ -3,7 +3,7 @@ import { mkdir } from 'fs/promises';
 import type { Message } from '../types/index.js';
 import { config } from '../config/index.js';
 
-function getTaiwanTimeFilename(): string {
+function getUtcTimeFilename(): string {
   const now = new Date();
   const options: Intl.DateTimeFormatOptions = {
     timeZone: config.logging.timezone,
@@ -45,7 +45,7 @@ export class LoggerService {
     // Ensure logs directory is initialized before writing
     await this.logsDirInitialized;
     
-    const filename = `${getTaiwanTimeFilename()}.txt`;
+    const filename = `${getUtcTimeFilename()}.txt`;
     const filePath = path.join(this.logsDir, filename);
     const content = JSON.stringify(history, null, 2);
 

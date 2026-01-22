@@ -113,7 +113,7 @@ export const config: AppConfig = {
     ),
   },
   logging: {
-    timezone: optionalEnv('LOG_TIMEZONE', 'Asia/Taipei'),
+    timezone: optionalEnv('LOG_TIMEZONE', 'UTC'),
     logsDir: path.join(process.cwd(), 'logs'),
   },
 };
