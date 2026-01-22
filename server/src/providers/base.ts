@@ -70,7 +70,7 @@ export abstract class BaseAIProvider implements AIProvider {
       throw new Error(`HTTP ${response.status} ${response.statusText}: ${errorText}`);
     }
 
-    return responseon() as Promise<T>;
+    return response.json() as Promise<T>;
   }
 
   /**
