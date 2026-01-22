@@ -1,9 +1,15 @@
+/**
+ * Application configuration - loads environment variables and provides type-safe config
+ * Supports .env and key.env files (key.env overrides .env)
+ */
 import path from 'path';
 import { readFileSync, existsSync } from 'fs';
 import type { ProviderType } from '../types/index.js';
 
-// Bun automatically loads .env files from project root
-// Manually load key.env to maintain override behavior (key.env overrides .env)
+/**
+ * Manually loads key.env file to override .env values
+ * Bun automatically loads .env, but we need explicit loading for key.env override behavior
+ */
 function loadKeyEnvSync(): void {
   try {
     const keyEnvPath = path.join(process.cwd(), 'key.env');
@@ -35,15 +41,24 @@ function loadKeyEnvSync(): void {
 // Load key.env at module initialization
 loadKeyEnvSync();
 
+/**
+ * Gets environment variable or returns default value
+ */
 function optionalEnv(key: string, defaultValue: string): string {
   return process.env[key] ?? defaultValue;
 }
 
+/**
+ * Parses string to number, returns default if invalid
+ */
 function parseNumber(value: string, defaultValue: number): number {
   const parsed = parseInt(value, 10);
   return isNaN(parsed) ? defaultValue : parsed;
 }
 
+/**
+ * Validates and parses provider type from environment variable
+ */
 function parseProviderType(value: string): ProviderType {
   if (value === 'xai' || value === 'ollama') {
     return value;
@@ -51,6 +66,9 @@ function parseProviderType(value: string): ProviderType {
   return 'xai';
 }
 
+/**
+ * Type-safe application configuration structure
+ */
 export interface AppConfig {
   server: {
     port: number;

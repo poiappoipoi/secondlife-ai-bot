@@ -1,6 +1,12 @@
+/**
+ * Ollama provider implementation for local LLM
+ */
 import type { Message } from '../types/index.js';
 import type { AIProvider, AIProviderConfig, AIProviderResponse } from '../types/index.js';
 
+/**
+ * Ollama OpenAI-compatible API response format
+ */
 interface OllamaResponse {
   choices: Array<{
     message: {
@@ -14,6 +20,10 @@ interface OllamaResponse {
   };
 }
 
+/**
+ * Ollama provider - implements chat completion using local Ollama instance
+ * Uses OpenAI-compatible API endpoint
+ */
 export class OllamaProvider implements AIProvider {
   readonly name = 'Ollama';
   protected readonly config: AIProviderConfig;
@@ -28,10 +38,16 @@ export class OllamaProvider implements AIProvider {
     };
   }
 
+  /**
+   * Ollama doesn't require API key authentication
+   */
   get isConfigured(): boolean {
-    return true; // Ollama doesn't need API key
+    return true;
   }
 
+  /**
+   * Performs fetch request with timeout using AbortController
+   */
   private async fetchWithTimeout(url: string, options: RequestInit, timeout: number): Promise<Response> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -52,22 +68,18 @@ export class OllamaProvider implements AIProvider {
     }
   }
 
+  /**
+   * Sends chat messages to Ollama API
+   * Filters out empty system messages to allow modelfile's SYSTEM directive to work
+   */
   async chat(messages: Message[]): Promise<AIProviderResponse> {
-    // Filter out empty system messages to allow modelfile's SYSTEM directive to work
-    // If system prompt is empty, don't send it so modelfile's system prompt is used
-    // If system prompt has content, send it to override modelfile
     const filteredMessages = messages.filter((msg) => {
-      // Keep all non-system messages
       if (msg.role !== 'system') {
         return true;
       }
-      // Only keep system message if it has content (non-empty)
-      // This allows modelfile's SYSTEM directive to work when no custom prompt is set
       return msg.content.trim().length > 0;
     });
 
-    // Ollama's OpenAI-compatible API format
-    // Note: max_tokens may not be supported, so we omit it
     const url = `${this.config.baseUrl}/chat/completions`;
     const response = await this.fetchWithTimeout(
       url,
@@ -94,6 +106,9 @@ export class OllamaProvider implements AIProvider {
     return this.parseResponse(data);
   }
 
+  /**
+   * Parses Ollama response into standard format
+   */
   protected parseResponse(data: OllamaResponse): AIProviderResponse {
     const content = data.choices[0]?.message?.content;
     if (!content) {

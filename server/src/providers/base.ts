@@ -1,6 +1,13 @@
+/**
+ * Base class for AI providers - provides common functionality for HTTP requests with timeout
+ */
 import type { Message } from '../types/index.js';
 import type { AIProvider, AIProviderConfig, AIProviderResponse } from '../types/index.js';
 
+/**
+ * Abstract base class for AI provider implementations
+ * Handles HTTP requests, timeouts, and common provider logic
+ */
 export abstract class BaseAIProvider implements AIProvider {
   abstract readonly name: string;
   protected readonly config: AIProviderConfig;
@@ -9,10 +16,16 @@ export abstract class BaseAIProvider implements AIProvider {
     this.config = config;
   }
 
+  /**
+   * Checks if provider is properly configured (has API key)
+   */
   get isConfigured(): boolean {
     return Boolean(this.config.apiKey);
   }
 
+  /**
+   * Performs fetch request with timeout using AbortController
+   */
   protected async fetchWithTimeout(url: string, options: RequestInit, timeout: number): Promise<Response> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -33,6 +46,10 @@ export abstract class BaseAIProvider implements AIProvider {
     }
   }
 
+  /**
+   * Makes authenticated POST request to AI provider API
+   * Handles errors and JSON parsing
+   */
   protected async makeRequest<T>(endpoint: string, body: unknown): Promise<T> {
     const url = `${this.config.baseUrl}${endpoint}`;
     const response = await this.fetchWithTimeout(
@@ -56,6 +73,13 @@ export abstract class BaseAIProvider implements AIProvider {
     return response.json() as Promise<T>;
   }
 
+  /**
+   * Sends chat messages to AI provider and returns response
+   */
   abstract chat(messages: Message[]): Promise<AIProviderResponse>;
+  
+  /**
+   * Parses provider-specific response format into standard format
+   */
   protected abstract parseResponse(data: unknown): AIProviderResponse;
 }

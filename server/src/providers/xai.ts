@@ -1,19 +1,31 @@
+/**
+ * X.AI Grok provider implementation
+ */
 import { BaseAIProvider } from './base.js';
 import type { Message } from '../types/index.js';
 import type { AIProviderResponse } from '../types/index.js';
 
+/**
+ * X.AI API response format (choices array)
+ */
 interface XAIResponseChoice {
   message?: {
     content?: string;
   };
 }
 
+/**
+ * X.AI API response format (output array)
+ */
 interface XAIResponseOutput {
   content?: Array<{
     text?: string;
   }>;
 }
 
+/**
+ * X.AI API response structure (supports both formats)
+ */
 interface XAIResponse {
   choices?: XAIResponseChoice[];
   output?: XAIResponseOutput[];
@@ -24,6 +36,9 @@ interface XAIResponse {
   };
 }
 
+/**
+ * X.AI Grok provider - implements chat completion using X.AI API
+ */
 export class XAIProvider extends BaseAIProvider {
   readonly name = 'X.AI Grok';
 
@@ -37,6 +52,9 @@ export class XAIProvider extends BaseAIProvider {
     });
   }
 
+  /**
+   * Sends chat messages to X.AI Grok API
+   */
   async chat(messages: Message[]): Promise<AIProviderResponse> {
     const data = await this.makeRequest<XAIResponse>('/chat/completions', {
       messages,
@@ -48,10 +66,12 @@ export class XAIProvider extends BaseAIProvider {
     return this.parseResponse(data);
   }
 
+  /**
+   * Parses X.AI response - handles both output[] and choices[] formats
+   */
   protected parseResponse(data: XAIResponse): AIProviderResponse {
     let content: string;
 
-    // Handle both response formats (as in original code)
     if (data.output?.[0]?.content?.[0]?.text) {
       content = data.output[0].content[0].text;
     } else if (data.choices?.[0]?.message?.content) {

@@ -1,6 +1,13 @@
+/**
+ * Rate limiter service - implements sliding window rate limiting
+ */
 import { config } from '../config/index.js';
 import type { RateLimitStatus } from '../types/index.js';
 
+/**
+ * Implements sliding window rate limiting
+ * Tracks request count within a time window and blocks requests when limit is exceeded
+ */
 export class RateLimiterService {
   private requestCount: number = 0;
   private windowStartTime: number = Date.now();
@@ -12,10 +19,14 @@ export class RateLimiterService {
     this.windowMs = config.rateLimit.windowMs;
   }
 
+  /**
+   * Checks if request is allowed and increments counter if allowed
+   * Automatically resets window if expired
+   * @returns Rate limit status including allowed flag and current count
+   */
   check(): RateLimitStatus {
     const now = Date.now();
 
-    // Reset window if expired
     if (now - this.windowStartTime > this.windowMs) {
       this.requestCount = 0;
       this.windowStartTime = now;
@@ -36,6 +47,9 @@ export class RateLimiterService {
     };
   }
 
+  /**
+   * Gets current rate limit status without incrementing counter
+   */
   getStatus(): RateLimitStatus {
     return {
       allowed: this.requestCount < this.maxRequests,

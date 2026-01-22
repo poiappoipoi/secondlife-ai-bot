@@ -1,8 +1,16 @@
+/**
+ * AI provider factory - creates provider instances based on configuration
+ */
 import type { AIProvider, ProviderType } from '../types/index.js';
 import { XAIProvider } from './xai.js';
 import { OllamaProvider } from './ollama.js';
 import { config } from '../config/index.js';
 
+/**
+ * Creates an AI provider instance of the specified type
+ * @param type - Provider type (defaults to config value)
+ * @returns Configured AI provider instance
+ */
 export function createProvider(type?: ProviderType): AIProvider {
   const providerType = type ?? config.ai.provider;
   const { maxTokens, timeout } = config.ai;
@@ -27,6 +35,10 @@ export function createProvider(type?: ProviderType): AIProvider {
   }
 }
 
+/**
+ * Gets a configured provider instance, throwing if not properly configured
+ * @throws Error if provider is missing required configuration (e.g., API key)
+ */
 export function getConfiguredProvider(): AIProvider {
   const provider = createProvider();
   if (!provider.isConfigured) {

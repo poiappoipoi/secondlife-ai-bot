@@ -1,5 +1,11 @@
+/**
+ * AI provider type definitions and interfaces
+ */
 import type { Message } from './conversation.js';
 
+/**
+ * Configuration required for AI provider initialization
+ */
 export interface AIProviderConfig {
   apiKey: string;
   model: string;
@@ -8,6 +14,9 @@ export interface AIProviderConfig {
   timeout: number;
 }
 
+/**
+ * Standardized response format from AI providers
+ */
 export interface AIProviderResponse {
   content: string;
   usage?: {
@@ -17,10 +26,16 @@ export interface AIProviderResponse {
   };
 }
 
+/**
+ * Interface that all AI providers must implement
+ */
 export interface AIProvider {
   readonly name: string;
   readonly isConfigured: boolean;
   chat(messages: Message[]): Promise<AIProviderResponse>;
 }
 
+/**
+ * Supported AI provider types
+ */
 export type ProviderType = 'xai' | 'ollama';

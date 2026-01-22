@@ -1,8 +1,14 @@
+/**
+ * Logger service - saves conversation history to log files with timezone support
+ */
 import path from 'path';
 import { mkdir } from 'fs/promises';
 import type { Message } from '../types/index.js';
 import { config } from '../config/index.js';
 
+/**
+ * Generates filename based on current time in configured timezone
+ */
 function getUtcTimeFilename(): string {
   const now = new Date();
   const options: Intl.DateTimeFormatOptions = {
@@ -21,6 +27,9 @@ function getUtcTimeFilename(): string {
   return `${get('year')}${get('month')}${get('day')}${get('hour')}${get('minute')}`;
 }
 
+/**
+ * Handles saving conversation logs to disk with timezone-aware filenames
+ */
 export class LoggerService {
   private readonly logsDir: string;
   private logsDirInitialized: Promise<void>;
@@ -30,19 +39,23 @@ export class LoggerService {
     this.logsDirInitialized = this.ensureLogsDir();
   }
 
+  /**
+   * Ensures logs directory exists (creates if missing)
+   */
   private async ensureLogsDir(): Promise<void> {
     try {
-      // Use Node.js fs.mkdir with recursive: true
-      // This won't error if the directory already exists
       await mkdir(this.logsDir, { recursive: true });
     } catch (error) {
-      // If mkdir fails, log it but don't throw
       console.error('Failed to ensure logs directory:', error);
     }
   }
 
+  /**
+   * Saves conversation history to log file
+   * @param history - Message array to save
+   * @param reason - Reason for saving (for logging)
+   */
   async saveConversation(history: Message[], reason: string): Promise<void> {
-    // Ensure logs directory is initialized before writing
     await this.logsDirInitialized;
     
     const filename = `${getUtcTimeFilename()}.txt`;
