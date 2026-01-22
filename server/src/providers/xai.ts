@@ -38,14 +38,14 @@ export class XAIProvider extends BaseAIProvider {
   }
 
   async chat(messages: Message[]): Promise<AIProviderResponse> {
-    const response = await this.client.post<XAIResponse>('/chat/completions', {
+    const data = await this.makeRequest<XAIResponse>('/chat/completions', {
       messages,
       model: this.config.model,
       stream: false,
       max_tokens: this.config.maxTokens,
     });
 
-    return this.parseResponse(response.data);
+    return this.parseResponse(data);
   }
 
   protected parseResponse(data: XAIResponse): AIProviderResponse {

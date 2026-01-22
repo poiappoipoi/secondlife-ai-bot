@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 Second Life AI Bot - A chatbot integration for Second Life using X.AI's Grok API. The system consists of two components:
-- **TypeScript Express server** (`server/src/`): Handles API requests and manages conversation state
+- **TypeScript Bun server** (`server/src/`): Handles API requests and manages conversation state (runs on Bun.js runtime)
 - **LSL script** (`lsl/brain.lsl`): Second Life object script that captures chat and communicates with the server
 
 ## Common Development Commands
@@ -17,22 +17,19 @@ Second Life AI Bot - A chatbot integration for Second Life using X.AI's Grok API
 cd server
 
 # Install dependencies
-npm install
+bun install
 
 # Development server (with hot reload)
-npm run dev
+bun run dev
 
-# Build TypeScript to JavaScript
-npm run build
+# Build (type check and verify server starts)
+bun run build
 
-# Production server (runs compiled JS)
-npm start
+# Production server (runs TypeScript directly)
+bun run start
 
 # Type checking only
-npm run typecheck
-
-# Legacy server (original JavaScript)
-npm run start:legacy
+bun run typecheck
 ```
 
 ### Configuration
@@ -99,8 +96,6 @@ server/
 │   └── routes/
 │       ├── chat.ts           # POST /chat endpoint
 │       └── system-prompt.ts  # POST /SetSystemPrompt endpoint
-├── dist/                     # Compiled JavaScript
-├── index.js                  # Legacy server (kept for fallback)
 ├── tsconfig.json
 └── package.json
 ```
@@ -109,7 +104,8 @@ server/
 
 **Configuration (`src/config/index.ts`)**:
 - Type-safe environment variable loading
-- Supports both `.env` and legacy `key.env` files
+- Bun automatically loads `.env` files from project root
+- Supports `key.env` file for override values (key.env overrides .env)
 - All settings configurable via environment variables
 
 **Provider Abstraction (`src/providers/`)**:
@@ -202,7 +198,8 @@ export class OpenAIProvider extends BaseAIProvider {
 
 ## Important Notes
 
-- **Backward Compatibility**: Original `index.js` kept for legacy fallback via `npm run start:legacy`
+- **Bun.js Runtime**: Server runs on Bun.js - TypeScript is executed directly without compilation
+- **Native APIs**: Uses Bun's native `fetch` API and `Bun.file()` for file operations
 - **Plain Text Responses**: API returns plain text (not JSON) for LSL script compatibility
 - **Taiwan Timezone**: Log files use Asia/Taipei timezone
 - **System Prompt Persistence**: Persona survives memory resets

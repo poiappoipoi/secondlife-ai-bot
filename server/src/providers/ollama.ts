@@ -1,4 +1,3 @@
-import axios, { AxiosInstance } from 'axios';
 import type { Message } from '../types/index.js';
 import type { AIProvider, AIProviderConfig, AIProviderResponse } from '../types/index.js';
 
@@ -17,7 +16,6 @@ interface OllamaResponse {
 
 export class OllamaProvider implements AIProvider {
   readonly name = 'Ollama';
-  protected readonly client: AxiosInstance;
   protected readonly config: AIProviderConfig;
 
   constructor(baseUrl: string, model: string, maxTokens: number, timeout: number) {
@@ -28,26 +26,37 @@ export class OllamaProvider implements AIProvider {
       baseUrl,
       timeout,
     };
-
-    // Create axios client WITHOUT Authorization header for Ollama
-    this.client = axios.create({
-      baseURL: baseUrl,
-      timeout: timeout,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
   }
 
   get isConfigured(): boolean {
     return true; // Ollama doesn't need API key
   }
 
+  private async fetchWithTimeout(url: string, options: RequestInit, timeout: number): Promise<Response> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      return response;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error(`Request timeout after ${timeout}ms`);
+      }
+      throw error;
+    }
+  }
+
   async chat(messages: Message[]): Promise<AIProviderResponse> {
     // Filter out empty system messages to allow modelfile's SYSTEM directive to work
     // If system prompt is empty, don't send it so modelfile's system prompt is used
     // If system prompt has content, send it to override modelfile
-    const filteredMessages = messages.filter((msg, index) => {
+    const filteredMessages = messages.filter((msg) => {
       // Keep all non-system messages
       if (msg.role !== 'system') {
         return true;
@@ -59,13 +68,30 @@ export class OllamaProvider implements AIProvider {
 
     // Ollama's OpenAI-compatible API format
     // Note: max_tokens may not be supported, so we omit it
-    const response = await this.client.post<OllamaResponse>('/chat/completions', {
-      messages: filteredMessages,
-      model: this.config.model,
-      stream: false,
-    });
+    const url = `${this.config.baseUrl}/chat/completions`;
+    const response = await this.fetchWithTimeout(
+      url,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: filteredMessages,
+          model: this.config.model,
+          stream: false,
+        }),
+      },
+      this.config.timeout
+    );
 
-    return this.parseResponse(response.data);
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      throw new Error(`HTTP ${response.status} ${response.statusText}: ${errorText}`);
+    }
+
+    const data = await response.json() as OllamaResponse;
+    return this.parseResponse(data);
   }
 
   protected parseResponse(data: OllamaResponse): AIProviderResponse {

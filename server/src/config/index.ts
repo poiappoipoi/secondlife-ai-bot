@@ -1,12 +1,39 @@
-import dotenv from 'dotenv';
 import path from 'path';
+import { readFileSync, existsSync } from 'fs';
 import type { ProviderType } from '../types/index.js';
 
-// Load environment files (support both .env and legacy key.env)
-// Uses process.cwd() to find config files relative to where server is run
-// Load .env first, then key.env (which will override .env values)
-dotenv.config({ path: path.join(process.cwd(), '.env') });
-dotenv.config({ path: path.join(process.cwd(), 'key.env'), override: true });
+// Bun automatically loads .env files from project root
+// Manually load key.env to maintain override behavior (key.env overrides .env)
+function loadKeyEnvSync(): void {
+  try {
+    const keyEnvPath = path.join(process.cwd(), 'key.env');
+    if (existsSync(keyEnvPath)) {
+      const content = readFileSync(keyEnvPath, 'utf-8');
+      // Parse simple KEY=VALUE format
+      const lines = content.split('\n');
+      for (const line of lines) {
+        const trimmed = line.trim();
+        // Skip empty lines and comments
+        if (!trimmed || trimmed.startsWith('#')) {
+          continue;
+        }
+        const equalIndex = trimmed.indexOf('=');
+        if (equalIndex > 0) {
+          const key = trimmed.substring(0, equalIndex).trim();
+          const value = trimmed.substring(equalIndex + 1).trim();
+          // Remove quotes if present
+          const unquotedValue = value.replace(/^["']|["']$/g, '');
+          process.env[key] = unquotedValue;
+        }
+      }
+    }
+  } catch {
+    // key.env is optional, ignore errors
+  }
+}
+
+// Load key.env at module initialization
+loadKeyEnvSync();
 
 function optionalEnv(key: string, defaultValue: string): string {
   return process.env[key] ?? defaultValue;

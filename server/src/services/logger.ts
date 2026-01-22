@@ -1,6 +1,5 @@
-import fs from 'fs/promises';
-import { existsSync, mkdirSync } from 'fs';
 import path from 'path';
+import { mkdir } from 'fs/promises';
 import type { Message } from '../types/index.js';
 import { config } from '../config/index.js';
 
@@ -24,26 +23,34 @@ function getTaiwanTimeFilename(): string {
 
 export class LoggerService {
   private readonly logsDir: string;
+  private logsDirInitialized: Promise<void>;
 
   constructor() {
     this.logsDir = config.logging.logsDir;
-    this.ensureLogsDir();
+    this.logsDirInitialized = this.ensureLogsDir();
   }
 
-  private ensureLogsDir(): void {
-    if (!existsSync(this.logsDir)) {
-      mkdirSync(this.logsDir, { recursive: true });
-      console.log('--- Created logs directory ---');
+  private async ensureLogsDir(): Promise<void> {
+    try {
+      // Use Node.js fs.mkdir with recursive: true
+      // This won't error if the directory already exists
+      await mkdir(this.logsDir, { recursive: true });
+    } catch (error) {
+      // If mkdir fails, log it but don't throw
+      console.error('Failed to ensure logs directory:', error);
     }
   }
 
   async saveConversation(history: Message[], reason: string): Promise<void> {
+    // Ensure logs directory is initialized before writing
+    await this.logsDirInitialized;
+    
     const filename = `${getTaiwanTimeFilename()}.txt`;
     const filePath = path.join(this.logsDir, filename);
     const content = JSON.stringify(history, null, 2);
 
     try {
-      await fs.writeFile(filePath, content, 'utf8');
+      await Bun.write(filePath, content);
       console.log(`\n[Log saved]: ${filename} (Reason: ${reason})`);
     } catch (error) {
       console.error('Failed to save log:', error);

@@ -1,5 +1,4 @@
 import { Router, Request, Response } from 'express';
-import axios from 'axios';
 import type { ChatRequest } from '../types/index.js';
 import { ConversationService } from '../services/conversation.js';
 import { RateLimiterService } from '../services/rate-limiter.js';
@@ -63,23 +62,19 @@ export function createChatRouter(
       // Remove failed user message from history
       conversation.removeLastMessage();
 
-      if (axios.isAxiosError(error)) {
-        const status = error.response?.status ?? 'unknown';
-        const statusText = error.response?.statusText ?? 'unknown';
-        const errorData = error.response?.data;
-        const errorMessage = error.message;
-        
-        console.error(`Request failed with status code ${status}`);
-        if (errorData) {
-          console.error('Error details:', JSON.stringify(errorData, null, 2));
-        }
-        
-        const statusCode = typeof status === 'number' ? status : 500;
-        const errorMsg = errorData?.error?.message || errorData?.message || errorMessage || 'Unknown error';
-        res.status(statusCode).send(`API error (${status} ${statusText}): ${errorMsg}`);
-      } else if (error instanceof Error) {
+      if (error instanceof Error) {
         console.error(error.message);
-        res.status(500).send(`API error: ${error.message}`);
+        
+        // Check if error message contains HTTP status code
+        const httpErrorMatch = error.message.match(/HTTP (\d+) (.+?):/);
+        if (httpErrorMatch) {
+          const statusCode = parseInt(httpErrorMatch[1], 10);
+          const statusText = httpErrorMatch[2];
+          const errorMsg = error.message.replace(/^HTTP \d+ .+?: /, '');
+          res.status(statusCode).send(`API error (${statusCode} ${statusText}): ${errorMsg}`);
+        } else {
+          res.status(500).send(`API error: ${error.message}`);
+        }
       } else {
         res.status(500).send('Connection error');
       }
