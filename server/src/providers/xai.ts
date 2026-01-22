@@ -81,7 +81,7 @@ export class XAIProvider extends BaseAIProvider {
       throw new Error('Response body is null');
     }
 
-    const reader = response.body.getReader();
+    const reader = response.body.getReader() as ReadableStreamDefaultReader<Uint8Array>;
     yield* this.parseSSEStream(reader);
   }
 

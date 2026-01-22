@@ -5,15 +5,19 @@
   "main": "src/index.ts",
   "scripts": {
     "dev": "bun --watch src/index.ts",
-    "build": "bun --typecheck src/index.ts && bun src/index.ts",
+    "build": "npm run typecheck && bun src/index.ts",
     "start": "bun src/index.ts",
-    "typecheck": "bun --typecheck src/index.ts",
+    "typecheck": "npm run typecheck:src",
+    "typecheck:watch": "tsc --noEmit --watch",
+    "typecheck:src": "tsc --noEmit",
+    "typecheck:tests": "tsc --noEmit --project tsconfig.test.json",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
     "test": "bun test",
-    "test:watch": "bun test --watch"
+    "test:watch": "bun test --watch",
+    "check": "npm run typecheck && npm run lint && npm run format:check"
   },
   "dependencies": {
     "express": "^4.18.0"
