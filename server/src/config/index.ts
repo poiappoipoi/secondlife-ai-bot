@@ -57,6 +57,14 @@ function parseNumber(value: string, defaultValue: number): number {
 }
 
 /**
+ * Parses boolean from environment variable
+ */
+function parseBoolean(value: string | undefined, defaultValue: boolean): boolean {
+  if (value === undefined || value === '') return defaultValue;
+  return value.toLowerCase() === 'true' || value === '1';
+}
+
+/**
  * Validates and parses provider type from environment variable
  */
 function parseProviderType(value: string): ProviderType {
@@ -94,6 +102,11 @@ export interface AppConfig {
   conversation: {
     inactivityTimeoutMs: number;
     maxHistoryMessages: number;
+    contextBudget: {
+      enabled: boolean;
+      maxContextTokens: number;
+      systemPromptMaxPercent: number;
+    };
   };
   persona: {
     personaFile: string;
@@ -131,6 +144,14 @@ export const config: AppConfig = {
   conversation: {
     inactivityTimeoutMs: parseNumber(optionalEnv('INACTIVITY_TIMEOUT_MS', '3600000'), 3600000),
     maxHistoryMessages: parseNumber(optionalEnv('CONVERSATION_MAX_HISTORY_MESSAGES', '50'), 50),
+    contextBudget: {
+      enabled: parseBoolean(process.env.CONTEXT_BUDGET_ENABLED, false),
+      maxContextTokens: parseNumber(optionalEnv('CONTEXT_MAX_TOKENS', '8000'), 8000),
+      systemPromptMaxPercent: parseNumber(
+        optionalEnv('CONTEXT_SYSTEM_PROMPT_MAX_PERCENT', '80'),
+        80
+      ),
+    },
   },
   persona: {
     personaFile: optionalEnv('PERSONA_FILE', 'cat-maid.md'),

@@ -5,6 +5,7 @@ import type { Message } from '../types/index';
 import { config } from '../config/index';
 import { LoggerService } from './logger';
 import { PersonaService } from './persona';
+import { estimateTokens, calculateMessagesFitInBudget } from '../utils/token-estimator';
 
 /**
  * Manages conversation state including message history and system prompt
@@ -18,12 +19,18 @@ export class ConversationService {
   private readonly personaService: PersonaService;
   private readonly inactivityTimeoutMs: number;
   private readonly maxHistoryMessages: number;
+  private readonly budgetEnabled: boolean;
+  private readonly maxContextTokens: number;
+  private readonly systemPromptMaxPercent: number;
 
   constructor(logger: LoggerService, personaService: PersonaService) {
     this.logger = logger;
     this.personaService = personaService;
     this.inactivityTimeoutMs = config.conversation.inactivityTimeoutMs;
     this.maxHistoryMessages = config.conversation.maxHistoryMessages;
+    this.budgetEnabled = config.conversation.contextBudget.enabled;
+    this.maxContextTokens = config.conversation.contextBudget.maxContextTokens;
+    this.systemPromptMaxPercent = config.conversation.contextBudget.systemPromptMaxPercent;
     this.systemPrompt = this.personaService.getSystemPrompt();
     this.history = [{ role: 'system', content: this.systemPrompt }];
   }
@@ -40,6 +47,59 @@ export class ConversationService {
       })),
     });
     return this.history;
+  }
+
+  /**
+   * Returns conversation history with token budget management
+   * If budget is disabled, returns full history
+   * If enabled, trims messages to fit within context window
+   */
+  getHistoryWithBudget(): Message[] {
+    // If budget disabled, return full history
+    if (!this.budgetEnabled) {
+      return this.getHistory();
+    }
+
+    // Calculate budgets
+    const systemMsg = this.history[0];
+    const systemTokens = estimateTokens(systemMsg.content);
+    const systemBudget = Math.floor((this.maxContextTokens * this.systemPromptMaxPercent) / 100);
+    const historyBudget = this.maxContextTokens - Math.min(systemTokens, systemBudget);
+
+    // Log warning if system prompt exceeds budget
+    if (systemTokens > systemBudget) {
+      this.logger.warn(
+        `System prompt (${systemTokens} tokens) exceeds budget (${systemBudget} tokens)`
+      );
+    }
+
+    // Calculate how many messages fit in history budget
+    const conversationMsgs = this.history.slice(1);
+    const messagesToInclude = calculateMessagesFitInBudget(conversationMsgs, historyBudget);
+
+    // Log trimming if it occurs
+    if (messagesToInclude < conversationMsgs.length) {
+      this.logger.debug(
+        `Context budget: Trimmed ${conversationMsgs.length - messagesToInclude} messages ` +
+          `(keeping ${messagesToInclude}/${conversationMsgs.length} conversation messages)`
+      );
+    }
+
+    // Return system + recent messages that fit
+    const result = [systemMsg, ...conversationMsgs.slice(-messagesToInclude)];
+
+    this.logger.debug('Building prompt for LLM with budget', {
+      budgetEnabled: true,
+      maxContextTokens: this.maxContextTokens,
+      systemTokens,
+      systemBudget,
+      historyBudget,
+      totalMessages: this.history.length,
+      includedMessages: result.length,
+      trimmedMessages: this.history.length - result.length,
+    });
+
+    return result;
   }
 
   /**

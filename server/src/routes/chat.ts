@@ -7,6 +7,7 @@ import { ConversationService } from '../services/conversation';
 import { RateLimiterService } from '../services/rate-limiter';
 import { LoggerService } from '../services/logger';
 import { getConfiguredProvider } from '../providers/index';
+import { config } from '../config/index';
 
 /**
  * Creates Express router for chat endpoint
@@ -75,11 +76,16 @@ export function createChatRouter(
         const provider = getConfiguredProvider(logger);
         logger.debug(`Using AI provider: ${provider.name}`);
 
+        // Get history with or without budget based on configuration
+        const history = config.conversation.contextBudget.enabled
+          ? conversation.getHistoryWithBudget()
+          : conversation.getHistory();
+
         // Try streaming first for faster response time
         let fullContent = '';
         try {
           logger.debug('Attempting streaming response');
-          const stream = provider.chatStream(conversation.getHistory());
+          const stream = provider.chatStream(history);
           for await (const chunk of stream) {
             fullContent += chunk;
           }
@@ -89,7 +95,7 @@ export function createChatRouter(
         } catch {
           // Fallback to non-streaming if streaming fails
           logger.warn('Streaming failed, falling back to non-streaming');
-          const response = await provider.chat(conversation.getHistory());
+          const response = await provider.chat(history);
           logger.info(
             `AI response received (${response.content.length} chars): ${response.content}`
           );

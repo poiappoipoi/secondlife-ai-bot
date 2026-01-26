@@ -3,6 +3,8 @@
  */
 import path from 'path';
 import { existsSync } from 'fs';
+import type { PersonaFacts, PersonaData } from '../types/index';
+import { parsePersonaContent, formatFactsAsText } from '../utils/persona-parser';
 
 /**
  * Manages persona loading from markdown files
@@ -11,6 +13,7 @@ export class PersonaService {
   private readonly personasDir: string;
   private currentPersonaName: string = '';
   private currentSystemPrompt: string = '';
+  private currentFacts: PersonaFacts = { character: {}, world: {} };
 
   constructor(personasDir?: string) {
     this.personasDir = personasDir ?? path.join(process.cwd(), 'personas');
@@ -37,10 +40,20 @@ export class PersonaService {
         throw new Error(`Persona file is empty: ${filePath}`);
       }
 
+      // Parse persona content
+      const parsed = parsePersonaContent(content);
       this.currentPersonaName = filename.replace(/\.md$/, '');
-      this.currentSystemPrompt = content.trim();
+      this.currentSystemPrompt = parsed.systemPrompt;
+      this.currentFacts = parsed.facts;
 
-      console.log(`[Persona] Loaded: ${this.currentPersonaName} from ${filename}`);
+      // Count facts
+      const charFactCount = Object.keys(this.currentFacts.character).length;
+      const worldFactCount = Object.keys(this.currentFacts.world).length;
+
+      console.log(
+        `[Persona] Loaded: ${this.currentPersonaName} from ${filename} ` +
+          `(${charFactCount} character, ${worldFactCount} world facts)`
+      );
 
       return this.currentSystemPrompt;
     } catch (error) {
@@ -87,5 +100,43 @@ export class PersonaService {
     } catch {
       return [];
     }
+  }
+
+  /**
+   * Gets the structured facts from current persona
+   */
+  getFacts(): PersonaFacts {
+    return this.currentFacts;
+  }
+
+  /**
+   * Gets a specific character fact by key
+   */
+  getCharacterFact(key: string): string | undefined {
+    return this.currentFacts.character[key];
+  }
+
+  /**
+   * Gets a specific world fact by key
+   */
+  getWorldFact(key: string): string | undefined {
+    return this.currentFacts.world[key];
+  }
+
+  /**
+   * Formats facts as readable text
+   */
+  getFactsAsText(): string {
+    return formatFactsAsText(this.currentFacts);
+  }
+
+  /**
+   * Gets complete persona data (system prompt + facts)
+   */
+  getPersonaData(): PersonaData {
+    return {
+      systemPrompt: this.currentSystemPrompt,
+      facts: this.currentFacts,
+    };
   }
 }
