@@ -108,6 +108,10 @@ export interface AppConfig {
       systemPromptMaxPercent: number;
     };
   };
+  memory: {
+    enabled: boolean;
+    tokenBudget: number;
+  };
   persona: {
     personaFile: string;
     personasDir: string;
@@ -152,6 +156,10 @@ export const config: AppConfig = {
         80
       ),
     },
+  },
+  memory: {
+    enabled: parseBoolean(process.env.MEMORY_ENABLED, true),
+    tokenBudget: parseNumber(optionalEnv('MEMORY_TOKEN_BUDGET', '500'), 500),
   },
   persona: {
     personaFile: optionalEnv('PERSONA_FILE', 'cat-maid.md'),

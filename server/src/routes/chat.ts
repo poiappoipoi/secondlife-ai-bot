@@ -76,10 +76,19 @@ export function createChatRouter(
         const provider = getConfiguredProvider(logger);
         logger.debug(`Using AI provider: ${provider.name}`);
 
-        // Get history with or without budget based on configuration
-        const history = config.conversation.contextBudget.enabled
-          ? conversation.getHistoryWithBudget()
-          : conversation.getHistory();
+        // Get history based on enabled features
+        // Priority: Memory > Budget > Simple
+        let history;
+        if (config.memory.enabled) {
+          // Memory system with keyword-activated injection (respects budget internally)
+          history = conversation.getHistoryWithMemories(config.memory.tokenBudget);
+        } else if (config.conversation.contextBudget.enabled) {
+          // Token budget management without memories
+          history = conversation.getHistoryWithBudget();
+        } else {
+          // Simple history (no budget, no memories)
+          history = conversation.getHistory();
+        }
 
         // Try streaming first for faster response time
         let fullContent = '';

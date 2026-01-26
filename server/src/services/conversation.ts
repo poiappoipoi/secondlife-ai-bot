@@ -5,6 +5,7 @@ import type { Message } from '../types/index';
 import { config } from '../config/index';
 import { LoggerService } from './logger';
 import { PersonaService } from './persona';
+import { MemoryService } from './memory';
 import { estimateTokens, calculateMessagesFitInBudget } from '../utils/token-estimator';
 
 /**
@@ -17,15 +18,17 @@ export class ConversationService {
   private inactivityTimer: NodeJS.Timeout | null = null;
   private readonly logger: LoggerService;
   private readonly personaService: PersonaService;
+  private readonly memoryService: MemoryService;
   private readonly inactivityTimeoutMs: number;
   private readonly maxHistoryMessages: number;
   private readonly budgetEnabled: boolean;
   private readonly maxContextTokens: number;
   private readonly systemPromptMaxPercent: number;
 
-  constructor(logger: LoggerService, personaService: PersonaService) {
+  constructor(logger: LoggerService, personaService: PersonaService, memoryService: MemoryService) {
     this.logger = logger;
     this.personaService = personaService;
+    this.memoryService = memoryService;
     this.inactivityTimeoutMs = config.conversation.inactivityTimeoutMs;
     this.maxHistoryMessages = config.conversation.maxHistoryMessages;
     this.budgetEnabled = config.conversation.contextBudget.enabled;
@@ -100,6 +103,59 @@ export class ConversationService {
     });
 
     return result;
+  }
+
+  /**
+   * Returns conversation history with relevant memories injected
+   * Memories are keyword-matched based on recent messages and injected after system prompt
+   * @param memoryTokenBudget - Maximum tokens to allocate for memories (default: 500)
+   * @returns Message array with system prompt, memories, and chat history
+   */
+  getHistoryWithMemories(memoryTokenBudget: number = 500): Message[] {
+    // Get recent messages for keyword matching (last 5 messages)
+    const conversationMsgs = this.history.slice(1);
+    const recentMessages = conversationMsgs
+      .slice(-5)
+      .map((m) => m.content);
+
+    // Retrieve relevant memories based on keywords
+    const memories = this.memoryService.getRelevantMemories(recentMessages, memoryTokenBudget);
+
+    // Build final context: [system] + [memories] + [chat history]
+    const systemMsg = this.history[0];
+    const memoryMessages: Message[] = memories.map((m) => ({
+      role: 'system' as const,
+      content: `[Memory] ${m.content}`,
+    }));
+
+    // Apply budget trimming to chat history if enabled
+    let chatHistory = conversationMsgs;
+    if (this.budgetEnabled) {
+      // Calculate remaining budget after system + memories
+      const systemTokens = estimateTokens(systemMsg.content);
+      const memoryTokens = memories.reduce((sum, m) => sum + estimateTokens(m.content), 0);
+      const usedTokens = systemTokens + memoryTokens;
+      const historyBudget = Math.max(0, this.maxContextTokens - usedTokens);
+
+      const messagesToInclude = calculateMessagesFitInBudget(conversationMsgs, historyBudget);
+      chatHistory = conversationMsgs.slice(-messagesToInclude);
+
+      this.logger.debug('Building prompt with memories and budget', {
+        systemTokens,
+        memoryTokens,
+        memoryCount: memories.length,
+        historyBudget,
+        chatMessagesIncluded: chatHistory.length,
+        chatMessagesTrimmed: conversationMsgs.length - chatHistory.length,
+      });
+    } else if (memories.length > 0) {
+      this.logger.debug('Building prompt with memories', {
+        memoryCount: memories.length,
+        chatMessages: chatHistory.length,
+      });
+    }
+
+    return [systemMsg, ...memoryMessages, ...chatHistory];
   }
 
   /**
