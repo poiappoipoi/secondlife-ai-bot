@@ -135,7 +135,7 @@ server/
 ### API Endpoints
 
 **POST /chat**
-- Request: `{ "message": "user text" }`
+- Request: `{ "speaker": "speaker name", "message": "user text" }`
 - Response: Plain text AI reply
 - Special commands: `"reset"` or `"清除"` to clear memory
 - Returns 429 when rate limited

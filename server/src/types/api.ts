@@ -6,6 +6,7 @@
  * Request body for POST /chat endpoint
  */
 export interface ChatRequest {
+  speaker: string;
   message: string;
 }
 

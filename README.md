@@ -140,6 +140,7 @@ Send a message to the AI / 向 AI 发送消息
 **Request / 请求：**
 ```json
 {
+  "speaker": "John Doe",
   "message": "Hello, how are you?"
 }
 ```

@@ -29,9 +29,7 @@ export function createChatRouter(
       // Check rate limit
       const rateLimit = rateLimiter.check();
       if (!rateLimit.allowed) {
-        logger.warn(
-          `Request blocked: rate limit reached (${rateLimit.current}/${rateLimit.max})`
-        );
+        logger.warn(`Request blocked: rate limit reached (${rateLimit.current}/${rateLimit.max})`);
         res
           .status(429)
           .send(
@@ -41,9 +39,15 @@ export function createChatRouter(
         return;
       }
 
-      const userMessage = req.body.message;
+      const { speaker, message: userMessage } = req.body;
 
       // Validate request
+      if (!speaker) {
+        logger.warn('Request received with no speaker field');
+        res.status(400).send('Error: No speaker field received');
+        return;
+      }
+
       if (!userMessage) {
         logger.warn('Request received with no message content');
         res.status(400).send('Error: No message content received');
@@ -51,7 +55,7 @@ export function createChatRouter(
       }
 
       logger.info(
-        `Received message (Request ${rateLimit.current}/${rateLimit.max} this hour): ${userMessage}`
+        `Received message from ${speaker} (Request ${rateLimit.current}/${rateLimit.max} this hour): ${userMessage}`
       );
 
       // Handle reset command
