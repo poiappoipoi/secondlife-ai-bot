@@ -95,7 +95,7 @@ export const generateBanner = (options: BannerOptions): string[] => {
   return lines;
 };
 
-const { app } = createApp();
+const { app, services } = await createApp();
 const { port } = config.server;
 
 app.listen(port, () => {
@@ -112,4 +112,15 @@ app.listen(port, () => {
   });
 
   banner.forEach((line) => console.log(line));
+  console.log(`Active persona: ${services.persona.getPersonaName()}\n`);
 });
+
+// Graceful shutdown
+function cleanup(): void {
+  console.log('\n--- Server shutting down ---');
+  services.conversation.destroy();
+  process.exit(0);
+}
+
+process.on('SIGTERM', cleanup);
+process.on('SIGINT', cleanup);

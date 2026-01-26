@@ -93,8 +93,11 @@ export interface AppConfig {
   };
   conversation: {
     inactivityTimeoutMs: number;
-    defaultSystemPrompt: string;
     maxHistoryMessages: number;
+  };
+  persona: {
+    personaFile: string;
+    personasDir: string;
   };
   logging: {
     timezone: string;
@@ -126,8 +129,11 @@ export const config: AppConfig = {
   },
   conversation: {
     inactivityTimeoutMs: parseNumber(optionalEnv('INACTIVITY_TIMEOUT_MS', '3600000'), 3600000),
-    defaultSystemPrompt: optionalEnv('DEFAULT_SYSTEM_PROMPT', ''),
     maxHistoryMessages: parseNumber(optionalEnv('CONVERSATION_MAX_HISTORY_MESSAGES', '50'), 50),
+  },
+  persona: {
+    personaFile: optionalEnv('PERSONA_FILE', 'cat-maid.md'),
+    personasDir: optionalEnv('PERSONAS_DIR', path.join(process.cwd(), 'personas')),
   },
   logging: {
     timezone: optionalEnv('LOG_TIMEZONE', 'UTC'),

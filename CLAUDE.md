@@ -61,7 +61,11 @@ RATE_LIMIT_WINDOW_MS=3600000
 
 # Conversation
 INACTIVITY_TIMEOUT_MS=3600000
-DEFAULT_SYSTEM_PROMPT=You are Grok, a helpful AI assistant.
+CONVERSATION_MAX_HISTORY_MESSAGES=50
+
+# Persona (System Prompt Management)
+PERSONA_FILE=cat-maid.md
+PERSONAS_DIR=./personas
 
 # Logging
 LOG_TIMEZONE=Asia/Taipei
@@ -92,10 +96,15 @@ server/
 │   ├── services/
 │   │   ├── conversation.ts   # Conversation state management
 │   │   ├── rate-limiter.ts   # Rate limiting logic
-│   │   └── logger.ts         # Log file persistence
+│   │   ├── logger.ts         # Log file persistence
+│   │   └── persona.ts        # Persona management (loads .md files)
 │   └── routes/
 │       ├── chat.ts           # POST /chat endpoint
 │       └── system-prompt.ts  # POST /SetSystemPrompt endpoint
+├── personas/
+│   ├── cat-maid.md           # Cat-maid persona (Chinese)
+│   ├── grok.md               # Grok AI assistant (English)
+│   └── README.md             # Persona documentation
 ├── tsconfig.json
 └── package.json
 ```
@@ -114,6 +123,7 @@ server/
 - Extensible for future providers (OpenAI, Anthropic, etc.)
 
 **Services (`src/services/`)**:
+- `PersonaService`: Loads and manages persona files (.md) from filesystem
 - `ConversationService`: Manages chat history and system prompt
 - `RateLimiterService`: Sliding window rate limiting
 - `LoggerService`: Taiwan timezone log file persistence
@@ -202,5 +212,10 @@ export class OpenAIProvider extends BaseAIProvider {
 - **Native APIs**: Uses Bun's native `fetch` API and `Bun.file()` for file operations
 - **Plain Text Responses**: API returns plain text (not JSON) for LSL script compatibility
 - **Taiwan Timezone**: Log files use Asia/Taipei timezone
+- **Persona System**: System prompts are loaded from markdown files in `personas/` directory
+  - Configure via `PERSONA_FILE` env variable (e.g., `cat-maid.md`, `grok.md`)
+  - Persona is loaded once at server startup
+  - To switch personas, update `.env` and restart server
+  - See `personas/README.md` for creating custom personas
 - **System Prompt Persistence**: Persona survives memory resets
 - **Rate Limiting**: Configurable via environment variables

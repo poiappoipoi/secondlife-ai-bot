@@ -4,6 +4,7 @@
 import type { Message } from '../types/index';
 import { config } from '../config/index';
 import { LoggerService } from './logger';
+import { PersonaService } from './persona';
 
 /**
  * Manages conversation state including message history and system prompt
@@ -14,14 +15,16 @@ export class ConversationService {
   private systemPrompt: string;
   private inactivityTimer: NodeJS.Timeout | null = null;
   private readonly logger: LoggerService;
+  private readonly personaService: PersonaService;
   private readonly inactivityTimeoutMs: number;
   private readonly maxHistoryMessages: number;
 
-  constructor(logger: LoggerService) {
+  constructor(logger: LoggerService, personaService: PersonaService) {
     this.logger = logger;
+    this.personaService = personaService;
     this.inactivityTimeoutMs = config.conversation.inactivityTimeoutMs;
     this.maxHistoryMessages = config.conversation.maxHistoryMessages;
-    this.systemPrompt = config.conversation.defaultSystemPrompt;
+    this.systemPrompt = this.personaService.getSystemPrompt();
     this.history = [{ role: 'system', content: this.systemPrompt }];
   }
 
