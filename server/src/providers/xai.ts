@@ -4,6 +4,7 @@
 import { BaseAIProvider } from './base';
 import type { Message } from '../types/index';
 import type { AIProviderResponse } from '../types/index';
+import { LoggerService } from '../services/logger';
 
 /**
  * X.AI API response format (choices array)
@@ -42,20 +43,30 @@ interface XAIResponse {
 export class XAIProvider extends BaseAIProvider {
   readonly name = 'X.AI Grok';
 
-  constructor(apiKey: string, model: string, maxTokens: number, timeout: number) {
-    super({
-      apiKey,
-      model,
-      maxTokens,
-      baseUrl: 'https://api.x.ai/v1',
-      timeout,
-    });
+  constructor(apiKey: string, model: string, maxTokens: number, timeout: number, logger: LoggerService) {
+    super(
+      {
+        apiKey,
+        model,
+        maxTokens,
+        baseUrl: 'https://api.x.ai/v1',
+        timeout,
+      },
+      logger
+    );
+    this.logger.info(`X.AI provider initialized: model=${model}, maxTokens=${maxTokens}`);
   }
 
   /**
    * Sends chat messages to X.AI Grok API
    */
   async chat(messages: Message[]): Promise<AIProviderResponse> {
+    this.logger.debug(`Sending request to X.AI (model: ${this.config.model})`, {
+      messageCount: messages.length,
+      maxTokens: this.config.maxTokens,
+    });
+    this.logger.debug('Messages sent to LLM', messages);
+
     const data = await this.makeRequest<XAIResponse>('/chat/completions', {
       messages,
       model: this.config.model,
@@ -63,13 +74,25 @@ export class XAIProvider extends BaseAIProvider {
       max_tokens: this.config.maxTokens,
     });
 
-    return this.parseResponse(data);
+    const response = this.parseResponse(data);
+    this.logger.debug('Response received from X.AI', {
+      contentLength: response.content.length,
+      usage: response.usage,
+    });
+
+    return response;
   }
 
   /**
    * Streams chat messages from X.AI Grok API
    */
   async *chatStream(messages: Message[]): AsyncIterable<string> {
+    this.logger.debug(`Sending streaming request to X.AI (model: ${this.config.model})`, {
+      messageCount: messages.length,
+      maxTokens: this.config.maxTokens,
+    });
+    this.logger.debug('Messages sent to LLM (streaming)', messages);
+
     const response = await this.makeStreamRequest('/chat/completions', {
       messages,
       model: this.config.model,
@@ -82,7 +105,9 @@ export class XAIProvider extends BaseAIProvider {
     }
 
     const reader = response.body.getReader() as ReadableStreamDefaultReader<Uint8Array>;
+    this.logger.debug('Streaming response started from X.AI');
     yield* this.parseSSEStream(reader);
+    this.logger.debug('Streaming response completed from X.AI');
   }
 
   /**

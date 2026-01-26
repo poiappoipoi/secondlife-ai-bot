@@ -3,6 +3,7 @@
  */
 import type { Message } from '../types/index';
 import type { AIProvider, AIProviderConfig, AIProviderResponse } from '../types/index';
+import { LoggerService } from '../services/logger';
 
 /**
  * Ollama OpenAI-compatible API response format
@@ -27,8 +28,9 @@ interface OllamaResponse {
 export class OllamaProvider implements AIProvider {
   readonly name = 'Ollama';
   protected readonly config: AIProviderConfig;
+  protected readonly logger: LoggerService;
 
-  constructor(baseUrl: string, model: string, maxTokens: number, timeout: number) {
+  constructor(baseUrl: string, model: string, maxTokens: number, timeout: number, logger: LoggerService) {
     this.config = {
       apiKey: 'ollama',
       model,
@@ -36,6 +38,8 @@ export class OllamaProvider implements AIProvider {
       baseUrl,
       timeout,
     };
+    this.logger = logger;
+    this.logger.info(`Ollama provider initialized: model=${model}, baseUrl=${baseUrl}`);
   }
 
   /**
@@ -84,6 +88,12 @@ export class OllamaProvider implements AIProvider {
       return msg.content.trim().length > 0;
     });
 
+    this.logger.debug(`Sending request to Ollama (model: ${this.config.model})`, {
+      originalMessageCount: messages.length,
+      filteredMessageCount: filteredMessages.length,
+    });
+    this.logger.debug('Messages sent to LLM', filteredMessages);
+
     const url = `${this.config.baseUrl}/chat/completions`;
     const response = await this.fetchWithTimeout(
       url,
@@ -107,7 +117,13 @@ export class OllamaProvider implements AIProvider {
     }
 
     const data = (await response.json()) as OllamaResponse;
-    return this.parseResponse(data);
+    const result = this.parseResponse(data);
+    this.logger.debug('Response received from Ollama', {
+      contentLength: result.content.length,
+      usage: result.usage,
+    });
+
+    return result;
   }
 
   /**
@@ -121,6 +137,12 @@ export class OllamaProvider implements AIProvider {
       }
       return msg.content.trim().length > 0;
     });
+
+    this.logger.debug(`Sending streaming request to Ollama (model: ${this.config.model})`, {
+      originalMessageCount: messages.length,
+      filteredMessageCount: filteredMessages.length,
+    });
+    this.logger.debug('Messages sent to LLM (streaming)', filteredMessages);
 
     const url = `${this.config.baseUrl}/chat/completions`;
     const response = await this.fetchWithTimeout(
@@ -147,6 +169,8 @@ export class OllamaProvider implements AIProvider {
     if (!response.body) {
       throw new Error('Response body is null');
     }
+
+    this.logger.debug('Streaming response started from Ollama');
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
@@ -280,6 +304,7 @@ export class OllamaProvider implements AIProvider {
       }
     } finally {
       reader.releaseLock();
+      this.logger.debug('Streaming response completed from Ollama');
     }
   }
 

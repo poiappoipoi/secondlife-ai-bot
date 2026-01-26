@@ -3,6 +3,7 @@
  */
 import type { Message } from '../types/index';
 import type { AIProvider, AIProviderConfig, AIProviderResponse } from '../types/index';
+import { LoggerService } from '../services/logger';
 
 /**
  * Abstract base class for AI provider implementations
@@ -11,9 +12,11 @@ import type { AIProvider, AIProviderConfig, AIProviderResponse } from '../types/
 export abstract class BaseAIProvider implements AIProvider {
   abstract readonly name: string;
   protected readonly config: AIProviderConfig;
+  protected readonly logger: LoggerService;
 
-  constructor(config: AIProviderConfig) {
+  constructor(config: AIProviderConfig, logger: LoggerService) {
     this.config = config;
+    this.logger = logger;
   }
 
   /**

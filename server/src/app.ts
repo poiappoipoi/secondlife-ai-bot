@@ -39,7 +39,7 @@ export async function createApp(): Promise<{ app: Application; services: AppServ
   const conversation = new ConversationService(logger, persona);
   const rateLimiter = new RateLimiterService();
 
-  app.use('/chat', createChatRouter(conversation, rateLimiter));
+  app.use('/chat', createChatRouter(conversation, rateLimiter, logger));
   app.use('/SetSystemPrompt', createSystemPromptRouter(conversation));
 
   return {

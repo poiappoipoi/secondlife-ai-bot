@@ -100,6 +100,7 @@ export interface AppConfig {
     personasDir: string;
   };
   logging: {
+    logLevel: string;
     timezone: string;
     logsDir: string;
   };
@@ -136,6 +137,7 @@ export const config: AppConfig = {
     personasDir: optionalEnv('PERSONAS_DIR', path.join(process.cwd(), 'personas')),
   },
   logging: {
+    logLevel: optionalEnv('LOG_LEVEL', 'INFO'),
     timezone: optionalEnv('LOG_TIMEZONE', 'UTC'),
     logsDir: path.join(process.cwd(), 'logs'),
   },

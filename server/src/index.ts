@@ -113,11 +113,20 @@ app.listen(port, () => {
 
   banner.forEach((line) => console.log(line));
   console.log(`Active persona: ${services.persona.getPersonaName()}\n`);
+
+  // Log server startup details
+  services.logger.info(`Server started successfully on port ${port}`);
+  services.logger.info(`Log level: ${config.logging.logLevel}`);
+  services.logger.info(
+    `AI Provider: ${providerName} (model: ${modelName}, max tokens: ${config.ai.maxTokens})`
+  );
+  services.logger.info(`Active persona: ${services.persona.getPersonaName()}`);
+  services.logger.info(`Rate limit: ${config.rateLimit.maxRequestsPerHour} requests/hour`);
 });
 
 // Graceful shutdown
 function cleanup(): void {
-  console.log('\n--- Server shutting down ---');
+  services.logger.info('Server shutting down');
   services.conversation.destroy();
   process.exit(0);
 }
