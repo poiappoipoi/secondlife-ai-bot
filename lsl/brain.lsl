@@ -149,6 +149,9 @@ default
         } else if (status == 204) {
             // Memory cleared (no content)
             llOwnerSay("System: Memory cleared");
+        } else if (status == 408) {
+            // Request timeout (LLM took too long)
+            llOwnerSay("Connection error: AI response timeout");
         } else if (status == 429) {
             // Rate limited
             llOwnerSay("Connection error: Rate limit exceeded");

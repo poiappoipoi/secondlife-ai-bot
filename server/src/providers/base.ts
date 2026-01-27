@@ -47,7 +47,7 @@ export abstract class BaseAIProvider implements AIProvider {
     } catch (error) {
       clearTimeout(timeoutId);
       if (error instanceof Error && error.name === 'AbortError') {
-        throw new Error(`Request timeout after ${timeout}ms`);
+        throw new Error(`HTTP 408 Request Timeout: Request timeout after ${timeout}ms`);
       }
       throw error;
     }
