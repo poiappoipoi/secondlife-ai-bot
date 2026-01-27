@@ -27,7 +27,7 @@ jobs:
           bun-version: latest
 
       - name: Install dependencies
-        run: cd server && bun install
+        run: cd server && bun install --ignore-scripts
 
       - name: Run tests
         run: cd server && bun test
