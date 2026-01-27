@@ -1,0 +1,6 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Run lint fixes, add any auto-fixed changes, then typecheck
+npm run precommit:server
+
