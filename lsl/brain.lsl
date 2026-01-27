@@ -5,7 +5,8 @@ integer gListenHandle_Chat;
 integer gListenHandle_Dialog;
 key gOwner;
 
-integer gIsActive = TRUE; 
+integer gIsActive = TRUE;
+float gMaxDistance = 10.0; // Maximum distance in meters to listen to chat 
 
 // Escape special characters for JSON strings
 string escape_json(string input) {
@@ -100,6 +101,12 @@ default
 
             // Don't process if paused
             if (gIsActive == FALSE) return;
+
+            // Check distance - ignore if avatar is too far (>10m)
+            vector npc_pos = llGetObjectPos();
+            vector avatar_pos = llGetAgentPos(id);
+            float distance = llVecMag(avatar_pos - npc_pos);
+            if (distance > gMaxDistance) return; // Ignore - too far away
 
             string speaker = llGetDisplayName(id);
             string avatarId = (string)id;
