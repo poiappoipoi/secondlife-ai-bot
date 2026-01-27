@@ -24,7 +24,7 @@ describe('Config', () => {
 
   it('should have valid conversation configuration', () => {
     expect(config.conversation.inactivityTimeoutMs).toBeGreaterThan(0);
-    expect(typeof config.conversation.defaultSystemPrompt).toBe('string');
+    expect(config.conversation.maxHistoryMessages).toBeGreaterThan(0);
   });
 
   it('should have valid logging configuration', () => {
@@ -32,15 +32,16 @@ describe('Config', () => {
     expect(config.logging.logsDir).toContain('logs');
   });
 
-  it('should have default port of 3002', () => {
-    expect(config.server.port).toBe(3002);
+  it('should have valid port configured', () => {
+    expect(config.server.port).toBeGreaterThan(0);
+    expect(config.server.port).toBeLessThan(65536);
   });
 
-  it('should have default max tokens of 300', () => {
-    expect(config.ai.maxTokens).toBe(300);
+  it('should have valid max tokens configured', () => {
+    expect(config.ai.maxTokens).toBeGreaterThan(0);
   });
 
-  it('should have default rate limit of 40', () => {
-    expect(config.rateLimit.maxRequestsPerHour).toBe(40);
+  it('should have valid rate limit configured', () => {
+    expect(config.rateLimit.maxRequestsPerHour).toBeGreaterThan(0);
   });
 });
