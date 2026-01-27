@@ -34,8 +34,12 @@ bun run typecheck
 
 ### Configuration
 
-Environment variables can be set in `server/.env` or `server/key.env`:
+Environment variables are configured in `server/.env` with local overrides in `server/.env.local`:
 
+- **`.env`**: Default configuration values (committed to git)
+- **`.env.local`**: Local overrides for development (gitignored, not committed)
+
+Example `.env`:
 ```env
 # Server
 PORT=3000
@@ -69,6 +73,16 @@ PERSONAS_DIR=./personas
 
 # Logging
 LOG_TIMEZONE=Asia/Taipei
+```
+
+Create `server/.env.local` to override any values for your local development:
+```env
+# Example: Use local Ollama instead of X.AI
+AI_PROVIDER=ollama
+OLLAMA_MODEL=my-local-model
+
+# Or use a different port
+PORT=3002
 ```
 
 See `server/.env.example` for full configuration options.
@@ -113,8 +127,8 @@ server/
 
 **Configuration (`src/config/index.ts`)**:
 - Type-safe environment variable loading
-- Bun automatically loads `.env` files from project root
-- Supports `key.env` file for override values (key.env overrides .env)
+- Bun automatically loads `.env` from project root
+- `.env.local` overrides `.env` values for local development
 - All settings configurable via environment variables
 
 **Provider Abstraction (`src/providers/`)**:

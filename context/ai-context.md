@@ -23,7 +23,7 @@ server/
 │   ├── index.ts              # Entry point with startup banner
 │   ├── app.ts                # Express app factory
 │   ├── config/
-│   │   └── index.ts          # Type-safe configuration (supports .env and key.env)
+│   │   └── index.ts          # Type-safe configuration (.env + .env.local)
 │   ├── types/
 │   │   ├── conversation.ts   # Message type definitions
 │   │   ├── api.ts            # Request/Response types
@@ -74,7 +74,7 @@ server/
 - **Multi-Provider Support**: Switchable AI backends (X.AI, Ollama)
 - **Auto-archiving**: Automatically saves conversations to log files before resets
 - **Memory Management**: Handles conversation resets, persona changes, and inactivity timeouts
-- **Configuration**: Supports `.env` and `key.env` files (key.env overrides .env)
+- **Configuration**: Uses `.env` for defaults, `.env.local` for local overrides
 
 ## AI Providers
 
@@ -243,12 +243,9 @@ Endpoint for changing AI persona.
 
 ### Environment Variables
 
-All settings are configurable via environment variables. The system supports two configuration files:
-
-1. **`.env`** - Main configuration file (automatically loaded by Bun)
-2. **`key.env`** - Override file (takes precedence over `.env`)
-
-This allows keeping sensitive keys in `key.env` (which can be gitignored) while maintaining defaults in `.env`.
+All settings are configurable via environment variables:
+- **`.env`**: Default configuration (automatically loaded by Bun)
+- **`.env.local`**: Local overrides for development (not committed to git)
 
 ```env
 # Server
@@ -447,4 +444,3 @@ The banner uses ANSI color codes for better visibility in terminal.
 - **Timezone Support**: Log files use configurable timezone (default: Asia/Taipei)
 - **System Prompt Persistence**: Persona survives memory resets
 - **Rate Limiting**: Sliding window algorithm with configurable limits
-- **Configuration Override**: `key.env` file overrides `.env` values for sensitive keys

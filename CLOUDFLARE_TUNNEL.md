@@ -261,7 +261,7 @@ cloudflared tunnel --config cloudflared-config.yml run ai-bot-tunnel --loglevel 
 
 2. **Access Control:** Consider adding Cloudflare Access rules if you want to restrict access to specific IPs or users.
 
-3. **API Keys:** Never commit `.cloudflared/credentials.json` or `key.env` to git. These files are already in `.gitignore`.
+3. **API Keys:** Never commit `.cloudflared/credentials.json` to git. This file is already in `.gitignore`.
 
 4. **HTTPS:** Cloudflare Tunnel automatically provides HTTPS encryption, so your LSL script should use `https://` URLs.
 

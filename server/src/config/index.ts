@@ -1,20 +1,20 @@
 /**
  * Application configuration - loads environment variables and provides type-safe config
- * Supports .env and key.env files (key.env overrides .env)
+ * Environment variables are loaded from .env (automatically by Bun), then .env.local overrides
  */
 import path from 'path';
 import { readFileSync, existsSync } from 'fs';
 import type { ProviderType, NPCConfig } from '../types/index';
 
 /**
- * Manually loads key.env file to override .env values
- * Bun automatically loads .env, but we need explicit loading for key.env override behavior
+ * Manually loads .env.local file to override .env values
+ * Bun automatically loads .env, but we need explicit loading for .env.local override
  */
-function loadKeyEnvSync(): void {
+function loadEnvLocalSync(): void {
   try {
-    const keyEnvPath = path.join(process.cwd(), 'key.env');
-    if (existsSync(keyEnvPath)) {
-      const content = readFileSync(keyEnvPath, 'utf-8');
+    const envLocalPath = path.join(process.cwd(), '.env.local');
+    if (existsSync(envLocalPath)) {
+      const content = readFileSync(envLocalPath, 'utf-8');
       // Parse simple KEY=VALUE format
       const lines = content.split('\n');
       for (const line of lines) {
@@ -34,12 +34,12 @@ function loadKeyEnvSync(): void {
       }
     }
   } catch {
-    // key.env is optional, ignore errors
+    // .env.local is optional, ignore errors
   }
 }
 
-// Load key.env at module initialization
-loadKeyEnvSync();
+// Load .env.local at module initialization to override .env values
+loadEnvLocalSync();
 
 /**
  * Gets environment variable or returns default value
