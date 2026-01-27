@@ -101,9 +101,9 @@ string url_base = "http://your-server-ip:3000";
 
 ### Menu Controls
 
-- **設定人設 / Set Persona** - Change the AI's personality
-- **清除記憶 / Clear Memory** - Reset conversation history
-- **開啟/暫停 / Pause/Resume** - Toggle listening state
+- **Clear Memory** - Reset conversation history
+- **Pause/Resume** - Toggle listening state
+- **Cancel** - Close the menu without taking action
 
 ### Project Structure
 
@@ -429,9 +429,9 @@ string url_base = "http://你的服务器IP:3000";
 
 ### 菜单控制
 
-- **設定人設** - 更改 AI 的人物设定
-- **清除記憶** - 重置对话历史
-- **開啟/暫停** - 切换监听状态
+- **Clear Memory** - 重置对话历史
+- **Pause/Resume** - 切换监听状态
+- **Cancel** - 关闭菜单且不执行任何操作
 
 ### 项目结构
 
