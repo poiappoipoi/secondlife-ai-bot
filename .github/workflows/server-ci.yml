@@ -1,0 +1,45 @@
+name: Server CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'server/**'
+      - '.github/workflows/server-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'server/**'
+      - '.github/workflows/server-ci.yml'
+
+jobs:
+  test:
+    name: Test & Quality Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: cd server && bun install
+
+      - name: Run tests
+        run: cd server && bun test
+
+      - name: Type check
+        run: cd server && npm run typecheck
+
+      - name: Lint
+        run: cd server && npm run lint
+
+      - name: Check formatting
+        run: cd server && npm run format:check
+
+      - name: Build verification
+        run: cd server && npm run build
