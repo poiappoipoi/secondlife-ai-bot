@@ -9,6 +9,9 @@ import {
   LoggerService,
   PersonaService,
   MemoryService,
+  MessageBufferService,
+  DecisionLayerService,
+  NPCStateMachineService,
 } from './services/index';
 import { config } from './config/index';
 
@@ -21,6 +24,9 @@ export interface AppServices {
   logger: LoggerService;
   persona: PersonaService;
   memory: MemoryService;
+  messageBuffer?: MessageBufferService;
+  decisionLayer?: DecisionLayerService;
+  stateMachine?: NPCStateMachineService;
 }
 
 /**
@@ -85,11 +91,40 @@ export async function createApp(): Promise<{ app: Application; services: AppServ
   const conversation = new ConversationService(logger, persona, memory);
   const rateLimiter = new RateLimiterService();
 
-  app.use('/chat', createChatRouter(conversation, rateLimiter, logger));
+  // === Initialize NPC State Machine Services (optional) ===
+  let messageBuffer: MessageBufferService | undefined;
+  let decisionLayer: DecisionLayerService | undefined;
+  let stateMachine: NPCStateMachineService | undefined;
+
+  if (config.npc.enabled) {
+    messageBuffer = new MessageBufferService(logger, config.npc.buffer);
+    decisionLayer = new DecisionLayerService(logger, config.npc.decision);
+    stateMachine = new NPCStateMachineService(
+      messageBuffer,
+      decisionLayer,
+      logger,
+      config.npc.stateMachine
+    );
+
+    // Start the state machine tick loop
+    stateMachine.start();
+    logger.info('NPC State Machine initialized and started');
+  }
+
+  app.use('/chat', createChatRouter(conversation, rateLimiter, logger, stateMachine, messageBuffer));
   app.use('/memory', createMemoryRouter(conversation, logger));
 
   return {
     app,
-    services: { conversation, rateLimiter, logger, persona, memory },
+    services: {
+      conversation,
+      rateLimiter,
+      logger,
+      persona,
+      memory,
+      messageBuffer,
+      decisionLayer,
+      stateMachine,
+    },
   };
 }

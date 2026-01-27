@@ -8,6 +8,7 @@
 export interface ChatRequest {
   speaker: string;
   message: string;
+  avatarId?: string; // UUID from LSL script
 }
 
 /**

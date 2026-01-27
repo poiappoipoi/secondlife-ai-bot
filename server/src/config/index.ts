@@ -4,7 +4,7 @@
  */
 import path from 'path';
 import { readFileSync, existsSync } from 'fs';
-import type { ProviderType } from '../types/index';
+import type { ProviderType, NPCConfig } from '../types/index';
 
 /**
  * Manually loads key.env file to override .env values
@@ -121,6 +121,7 @@ export interface AppConfig {
     timezone: string;
     logsDir: string;
   };
+  npc: NPCConfig;
 }
 
 export const config: AppConfig = {
@@ -169,5 +170,40 @@ export const config: AppConfig = {
     logLevel: optionalEnv('LOG_LEVEL', 'INFO'),
     timezone: optionalEnv('LOG_TIMEZONE', 'UTC'),
     logsDir: path.join(process.cwd(), 'logs'),
+  },
+  npc: {
+    enabled: parseBoolean(process.env.NPC_ENABLED, false),
+    stateMachine: {
+      tickIntervalMs: parseNumber(optionalEnv('NPC_TICK_INTERVAL_MS', '1000'), 1000),
+      timeouts: {
+        listeningMs: parseNumber(optionalEnv('NPC_LISTENING_TIMEOUT_MS', '15000'), 15000),
+        thinkingMs: parseNumber(optionalEnv('NPC_THINKING_TIMEOUT_MS', '30000'), 30000),
+        speakingCooldownMs: parseNumber(optionalEnv('NPC_SPEAKING_COOLDOWN_MS', '5000'), 5000),
+      },
+    },
+    buffer: {
+      maxMessagesPerAvatar: parseNumber(optionalEnv('NPC_BUFFER_MAX_PER_AVATAR', '10'), 10),
+      maxTotalBufferSize: parseNumber(optionalEnv('NPC_BUFFER_MAX_TOTAL_SIZE', '50'), 50),
+      aggregationWindowMs: parseNumber(optionalEnv('NPC_BUFFER_AGGREGATION_WINDOW_MS', '5000'), 5000),
+      expiryMs: parseNumber(optionalEnv('NPC_BUFFER_EXPIRY_MS', '60000'), 60000),
+    },
+    decision: {
+      responseThreshold: parseNumber(optionalEnv('NPC_RESPONSE_THRESHOLD', '50'), 50),
+      responseChance: parseFloat(optionalEnv('NPC_RESPONSE_CHANCE', '0.8')),
+      triggerWords: optionalEnv('NPC_TRIGGER_WORDS', 'maid,cat-maid,kitty')
+        .split(',')
+        .map((word) => word.trim())
+        .filter((word) => word.length > 0),
+      scoring: {
+        directMentionBonus: parseNumber(optionalEnv('NPC_SCORE_DIRECT_MENTION', '100'), 100),
+        recentInteractionBonus: parseNumber(optionalEnv('NPC_SCORE_RECENT_INTERACTION', '30'), 30),
+        messageCountMultiplier: parseNumber(optionalEnv('NPC_SCORE_MESSAGE_COUNT_MULT', '5'), 5),
+        consecutiveBonus: parseNumber(optionalEnv('NPC_SCORE_CONSECUTIVE_BONUS', '10'), 10),
+        maxTimeDecay: parseNumber(optionalEnv('NPC_SCORE_MAX_TIME_DECAY', '20'), 20),
+        timeDecayRate: parseNumber(optionalEnv('NPC_SCORE_TIME_DECAY_RATE', '2'), 2),
+        randomnessRange: parseNumber(optionalEnv('NPC_SCORE_RANDOMNESS_RANGE', '10'), 10),
+      },
+      cooldownMs: parseNumber(optionalEnv('NPC_AVATAR_COOLDOWN_MS', '30000'), 30000),
+    },
   },
 };

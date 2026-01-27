@@ -102,9 +102,10 @@ default
             if (gIsActive == FALSE) return;
 
             string speaker = llGetDisplayName(id);
+            string avatarId = (string)id;
             string escaped_msg = escape_json(message);
             string escaped_speaker = escape_json(speaker);
-            string json = "{\"speaker\":\"" + escaped_speaker + "\",\"message\":\"" + escaped_msg + "\"}";
+            string json = "{\"speaker\":\"" + escaped_speaker + "\",\"avatarId\":\"" + avatarId + "\",\"message\":\"" + escaped_msg + "\"}";
             llHTTPRequest(url_base + "/chat", [HTTP_METHOD, "POST", HTTP_MIMETYPE, "application/json"], json);
             return;
         }
@@ -135,9 +136,15 @@ default
     http_response(key request_id, integer status, list metadata, string body) {
         if (status == 200) {
             handle_response(body);
+        } else if (status == 202) {
+            // NPC ignored this message (buffered but not responding)
+            // Silent - this is normal behavior
         } else if (status == 204) {
             // Memory cleared (no content)
             llOwnerSay("System: Memory cleared");
+        } else if (status == 429) {
+            // Rate limited
+            llOwnerSay("Connection error: Rate limit exceeded");
         } else {
             // Handle other error codes
             llOwnerSay("Connection error (" + (string)status + "): " + body);
