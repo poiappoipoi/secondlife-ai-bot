@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 Second Life AI Bot - A chatbot integration for Second Life using X.AI's Grok API. The system consists of two components:
-- **Node.js Express server** (`server/index.js`): Handles API requests and manages conversation state
+- **TypeScript Bun server** (`server/src/`): Handles API requests and manages conversation state (runs on Bun.js runtime)
 - **LSL script** (`lsl/brain.lsl`): Second Life object script that captures chat and communicates with the server
 
 ## Common Development Commands
@@ -17,126 +17,205 @@ Second Life AI Bot - A chatbot integration for Second Life using X.AI's Grok API
 cd server
 
 # Install dependencies
-npm install
+bun install
 
-# Start the server (default port 3000)
-npm start
-# or
-node index.js
+# Development server (with hot reload)
+bun run dev
+
+# Build (type check and verify server starts)
+bun run build
+
+# Production server (runs TypeScript directly)
+bun run start
+
+# Type checking only
+bun run typecheck
 ```
 
 ### Configuration
 
-Environment variables are stored in `server/key.env`:
+Environment variables can be set in `server/.env` or `server/key.env`:
+
 ```env
+# Server
+PORT=3000
+
+# AI Provider (xai | ollama)
+AI_PROVIDER=xai
+AI_MAX_TOKENS=300
+AI_TIMEOUT_MS=30000
+
+# X.AI (Grok)
 XAI_API_KEY=your-xai-api-key-here
-OPENAI_API_KEY=your-openai-api-key-here  # Optional, not used
+XAI_MODEL=grok-4-1-fast-non-reasoning
+
+# Ollama (local LLM)
+# Make sure Ollama is running: ollama serve
+# Create the model: ollama create cat-maid -f cat-maid.modelfile
+OLLAMA_BASE_URL=http://localhost:11434/v1
+OLLAMA_MODEL=cat-maid
+
+# Rate Limiting
+RATE_LIMIT_MAX=40
+RATE_LIMIT_WINDOW_MS=3600000
+
+# Conversation
+INACTIVITY_TIMEOUT_MS=3600000
+CONVERSATION_MAX_HISTORY_MESSAGES=50
+
+# Persona (System Prompt Management)
+PERSONA_FILE=cat-maid.md
+PERSONAS_DIR=./personas
+
+# Logging
+LOG_TIMEZONE=Asia/Taipei
 ```
 
-**Note**: Only `XAI_API_KEY` is required. The server uses Grok API exclusively.
+See `server/.env.example` for full configuration options.
 
 ## Architecture
 
-### Server Architecture (`server/index.js`)
+### TypeScript Server Structure
 
-**Core Components**:
-- **Express server**: REST API with two endpoints (`/chat`, `/SetSystemPrompt`)
-- **Conversation memory**: In-memory array storing chat history with roles (system/user/assistant)
-- **Rate limiting**: 40 requests per hour, automatically resets every hour
-- **Auto-save system**: Saves conversation to timestamped log files after inactivity (1 hour) or manual reset
-- **System prompt management**: Global `currentSystemPrompt` variable that persists across memory resets
-
-**Key Global State**:
-```javascript
-currentSystemPrompt          // AI persona, survives memory resets
-conversationHistory          // Array of {role, content} objects
-requestCount                 // Rate limiter counter
-rateLimitStartTime          // Rate limiter window start time
-inactivityTimer             // Timeout handle for auto-save
+```
+server/
+├── src/
+│   ├── index.ts              # Entry point
+│   ├── app.ts                # Express app setup
+│   ├── config/
+│   │   └── index.ts          # Type-safe configuration
+│   ├── types/
+│   │   ├── conversation.ts   # Message, ConversationState
+│   │   ├── api.ts            # Request/Response types
+│   │   └── providers.ts      # AIProvider interface
+│   ├── providers/
+│   │   ├── base.ts           # Abstract BaseAIProvider
+│   │   ├── xai.ts            # X.AI Grok implementation
+│   │   ├── ollama.ts         # Ollama (local LLM) implementation
+│   │   └── index.ts          # Provider factory
+│   ├── services/
+│   │   ├── conversation.ts   # Conversation state management
+│   │   ├── rate-limiter.ts   # Rate limiting logic
+│   │   ├── logger.ts         # Log file persistence
+│   │   └── persona.ts        # Persona management (loads .md files)
+│   └── routes/
+│       ├── chat.ts           # POST /chat endpoint
+│       └── system-prompt.ts  # POST /SetSystemPrompt endpoint
+├── personas/
+│   ├── cat-maid.md           # Cat-maid persona (Chinese)
+│   ├── grok.md               # Grok AI assistant (English)
+│   └── README.md             # Persona documentation
+├── tsconfig.json
+└── package.json
 ```
 
-**API Endpoints**:
-- `POST /chat`: Send message to AI, returns AI response as plain text
-  - Auto-resets conversation after 1 hour of inactivity
-  - Special command: Send "reset" or "清除" to manually clear memory
-  - Returns 429 status when rate limit exceeded
-- `POST /SetSystemPrompt`: Update AI persona (saves old conversation first)
+### Key Components
 
-**Logging System**:
-- Saves conversation history to `server/logs/` directory
-- Filename format: `YYYYMMDDHHmm.txt` (Taiwan timezone)
-- Contains full JSON of conversation history
-- Triggered by: manual reset, system prompt change, 1-hour inactivity, or "reset" command
+**Configuration (`src/config/index.ts`)**:
+- Type-safe environment variable loading
+- Bun automatically loads `.env` files from project root
+- Supports `key.env` file for override values (key.env overrides .env)
+- All settings configurable via environment variables
 
-**X.AI API Integration**:
-- Endpoint: `https://api.x.ai/v1/chat/completions`
-- Model: `grok-4-1-fast-non-reasoning`
-- Max tokens: 300
-- Sends entire conversation history for context
+**Provider Abstraction (`src/providers/`)**:
+- `AIProvider` interface for swappable AI backends
+- Implements X.AI Grok and Ollama (local LLM)
+- Extensible for future providers (OpenAI, Anthropic, etc.)
 
-### LSL Script Architecture (`lsl/brain.lsl`)
+**Services (`src/services/`)**:
+- `PersonaService`: Loads and manages persona files (.md) from filesystem
+- `ConversationService`: Manages chat history and system prompt
+- `RateLimiterService`: Sliding window rate limiting
+- `LoggerService`: Taiwan timezone log file persistence
 
-**State Management**:
-- `gIsActive`: Controls whether bot listens to chat (pause/resume functionality)
-- `gWaitingForPrompt`: Flag for expecting system prompt input from text box
-- Status displayed as hover text with color coding (purple=active, red=paused)
+**Routes (`src/routes/`)**:
+- `POST /chat`: Main chat endpoint (plain text response)
+- `POST /SetSystemPrompt`: Update AI persona
 
-**Key Features**:
-- **OOC Filter**: Automatically ignores messages starting with `((` (Out Of Character)
-- **Agent-only listening**: Filters out messages from non-avatar sources using `llGetAgentSize()`
-- **Self-filtering**: Ignores messages from the bot itself
-- **Owner-only controls**: Touch menu restricted to object owner
+### API Endpoints
 
-**Communication Flow**:
-1. LSL script listens on public chat (channel 0)
-2. Filters applied: not from self → is avatar → not OOC → bot is active
-3. HTTP POST to server `/chat` endpoint with JSON payload
-4. Server responds with AI reply as plain text
-5. LSL speaks response using `llSay(0, body)`
+**POST /chat**
+- Request: `{ "speaker": "speaker name", "message": "user text" }`
+- Response: Plain text AI reply
+- Special commands: `"reset"` or `"清除"` to clear memory
+- Returns 429 when rate limited
 
-**Touch Menu Options** (owner only):
-- **設定人設 / Set System Prompt**: Opens text box to change AI persona
-- **清除記憶 / Clear Memory**: Sends "reset" message to clear conversation history
-- **開啟/暫停 / Pause/Resume**: Toggles `gIsActive` state
-- **取消 / Cancel**: Closes menu
+**POST /SetSystemPrompt**
+- Request: `{ "prompt": "new persona" }`
+- Response: Success message
+- Saves current conversation before changing
 
-**Configuration Required**:
-- Set `url_base` in line 1 to your server address (e.g., `"http://your-ip:3000"`)
+### LSL Script (`lsl/brain.lsl`)
 
-## Important Implementation Details
+**Features**:
+- OOC filter (ignores messages starting with `((`)
+- Agent-only listening (filters non-avatars)
+- Self-filtering (ignores bot's own messages)
+- Owner-only touch menu
 
-### Rate Limiting Logic
-The rate limiter uses a sliding window approach:
-- Tracks `requestCount` and `rateLimitStartTime`
-- Resets counter when 1 hour (3600000ms) has elapsed
-- Increments count on each `/chat` request
-- Returns 429 error when limit reached
+**Touch Menu Options**:
+- 設定人設 / Set System Prompt
+- 清除記憶 / Clear Memory
+- 開啟/暫停 / Pause/Resume
+- 取消 / Cancel
 
-### Memory Reset Behavior
-When conversation history is reset:
-1. **Old conversation is saved** to logs (unless history is empty)
-2. **System prompt is preserved** using `currentSystemPrompt` variable
-3. **New conversation history** initialized with current system prompt
-4. **Inactivity timer** is cleared and restarted after next message
+**Configuration**:
+- Set `url_base` in line 1 to your server address
 
-This ensures the AI persona persists across memory resets, preventing the need to reconfigure after every reset.
+## Type Definitions
 
-### Taiwan Timezone Logging
-Log filenames use `Asia/Taipei` timezone via `Intl.DateTimeFormat` with parts parsing to construct `YYYYMMDDHHmm.txt` format.
+### Message
+```typescript
+type MessageRole = 'system' | 'user' | 'assistant';
+interface Message {
+  role: MessageRole;
+  content: string;
+}
+```
 
-### Error Handling
-- **Server errors**: Returns 500 status with error message
-- **LSL HTTP errors**: Displays error status code to owner via `llOwnerSay()`
-- **Rate limit**: Returns 429 with descriptive message showing current count
-- **Missing message**: Returns 400 status
-- **API failures**: Removes failed user message from conversation history (pops last entry)
+### AIProvider
+```typescript
+interface AIProvider {
+  readonly name: string;
+  readonly isConfigured: boolean;
+  chat(messages: Message[]): Promise<AIProviderResponse>;
+}
+```
 
-## Server Port Configuration
+## Adding New AI Providers
 
-Default port is 3000. To change:
-- Edit line 196 in `server/index.js`: `app.listen(3000, ...)`
+1. Create new provider class in `src/providers/`
+2. Extend `BaseAIProvider` and implement `chat()` and `parseResponse()`
+3. Add provider type to `ProviderType` in `src/types/providers.ts`
+4. Register in provider factory `src/providers/index.ts`
+5. Add configuration in `src/config/index.ts`
 
-## Rate Limit Adjustment
+Example:
+```typescript
+// src/providers/openai.ts
+export class OpenAIProvider extends BaseAIProvider {
+  readonly name = 'OpenAI';
 
-To modify hourly request limit:
-- Edit line 32 in `server/index.js`: `const MAX_REQUESTS_PER_HOUR = 40;`
+  async chat(messages: Message[]): Promise<AIProviderResponse> {
+    // Implementation
+  }
+
+  protected parseResponse(data: unknown): AIProviderResponse {
+    // Parse OpenAI response format
+  }
+}
+```
+
+## Important Notes
+
+- **Bun.js Runtime**: Server runs on Bun.js - TypeScript is executed directly without compilation
+- **Native APIs**: Uses Bun's native `fetch` API and `Bun.file()` for file operations
+- **Plain Text Responses**: API returns plain text (not JSON) for LSL script compatibility
+- **Taiwan Timezone**: Log files use Asia/Taipei timezone
+- **Persona System**: System prompts are loaded from markdown files in `personas/` directory
+  - Configure via `PERSONA_FILE` env variable (e.g., `cat-maid.md`, `grok.md`)
+  - Persona is loaded once at server startup
+  - To switch personas, update `.env` and restart server
+  - See `personas/README.md` for creating custom personas
+- **System Prompt Persistence**: Persona survives memory resets
+- **Rate Limiting**: Configurable via environment variables

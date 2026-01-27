@@ -1,20 +1,44 @@
-string url_base = ""; // ★ 請確認 IP 是否正確
+string url_base = ""; // Set server address here
 
 integer gDialogChannel;
 integer gListenHandle_Chat;
 integer gListenHandle_Dialog;
 key gOwner;
 
-integer gWaitingForPrompt = FALSE; 
-integer gIsActive = TRUE; 
+integer gIsActive = TRUE;
+float gMaxDistance = 10.0; // Maximum distance in meters to listen to chat 
 
-// 更新狀態顯示的函式
+// Escape special characters for JSON strings
+string escape_json(string input) {
+    string result = "";
+    integer len = llStringLength(input);
+    integer i;
+    for (i = 0; i < len; i++) {
+        string char = llGetSubString(input, i, i);
+        if (char == "\\") {
+            result += "\\\\";
+        } else if (char == "\"") {
+            result += "\\\"";
+        } else if (char == "\n") {
+            result += "\\n";
+        } else if (char == "\r") {
+            result += "\\r";
+        } else if (char == "\t") {
+            result += "\\t";
+        } else {
+            result += char;
+        }
+    }
+    return result;
+}
+
+// Update floating text status
 update_status() {
     if (gIsActive) {
-        // 開啟狀態：粉紫色文字 (Talk To AI Brain)
+        // Show active status in magenta
         llSetText(" \n \n \nTalk To AI Brain", <1.0, 0.0, 1.0>, 1.0);
     } else {
-        // 暫停狀態：紅色文字
+        // Show paused status in red
         llSetText(" \n \n \nZzz... (PAUSED)", <1.0, 0.0, 0.0>, 1.0);
     }
 }
@@ -22,19 +46,24 @@ update_status() {
 init() {
     gOwner = llGetOwner();
     gDialogChannel = (integer)llFrand(100000.0) + 1000;
-    
-    // 初始化文字
+
+    // Update floating text
     update_status();
-    
+
+    // Remove old listeners
     llListenRemove(gListenHandle_Chat);
     llListenRemove(gListenHandle_Dialog);
-    
-    // 監聽所有人
+
+    // Listen to all public chat
     gListenHandle_Chat = llListen(0, "", NULL_KEY, "");
-    // 監聽選單
+    // Listen to menu responses
     gListenHandle_Dialog = llListen(gDialogChannel, "", gOwner, "");
     
-    llOwnerSay("系統已就緒。已開啟 OOC 過濾功能 ((...))。");
+    llOwnerSay("System ready. OOC filter enabled ((...)).");
+}
+
+handle_response(string response) {
+    llSay(0, response);
 }
 
 default
@@ -48,91 +77,84 @@ default
     }
 
     touch_start(integer total_number) {
-        if (llDetectedKey(0) != gOwner) {
-            llWhisper(0, "我是 AI 機器人，直接跟我說話就可以了。");
-            return; 
-        }
-        
-        gWaitingForPrompt = FALSE;
-        
-        // 判斷目前狀態，顯示在選單標題上
-        string status_msg = "【目前狀態: 運作中】";
-        if (!gIsActive) status_msg = "【目前狀態: 已暫停】";
+        // Determine current status, display in menu title
+        string status_msg = "【Status: Running】";
+        if (!gIsActive) status_msg = "【Status: Paused】";
 
-        // 跳出選單
-        llDialog(gOwner, "\n" + status_msg + "\n請選擇操作：", 
-            ["設定人設", "清除記憶", "開啟/暫停", "取消"], gDialogChannel);
+        // Show menu
+        llDialog(gOwner, "\n" + status_msg + "\nSelect an action:",
+            ["Clear Memory", "Pause/Resume", "Cancel"], gDialogChannel);
     }
 
     listen(integer channel, string name, key id, string message) {
-        
-        // === 情況 A: 收到聊天訊息 ===
+        // Handle chat messages
         if (channel == 0) {
-            // 1. 不聽自己的話
+            // Ignore own messages
             if (id == llGetKey()) return; 
 
-            // 2. 過濾器：只聽真人的話
-            // llGetAgentSize 如果回傳 ZERO_VECTOR，代表是物件
+            // Ignore non-avatar objects
             if (llGetAgentSize(id) == ZERO_VECTOR) return;
 
-            // ★★★ 新增過濾器：忽略 (( ... )) 的 OOC 發言 ★★★
-            // 先把訊息前後的空白去掉
+            // Ignore out-of-character (OOC) messages: ((text))
             string cleanMsg = llStringTrim(message, STRING_TRIM);
-            // 檢查前兩個字是不是 "(("
             if (llGetSubString(cleanMsg, 0, 1) == "((") return;
 
-            // 3. 如果處於暫停狀態，不傳送資料
+            // Don't process if paused
             if (gIsActive == FALSE) return;
 
-            string json = "{\"message\":\"" + message + "\"}";
+            // Check distance - ignore if avatar is too far (>10m)
+            vector npc_pos = llGetObjectPos();
+            vector avatar_pos = llGetAgentPos(id);
+            float distance = llVecMag(avatar_pos - npc_pos);
+            if (distance > gMaxDistance) return; // Ignore - too far away
+
+            string speaker = llGetDisplayName(id);
+            string avatarId = (string)id;
+            string escaped_msg = escape_json(message);
+            string escaped_speaker = escape_json(speaker);
+            string json = "{\"speaker\":\"" + escaped_speaker + "\",\"avatarId\":\"" + avatarId + "\",\"message\":\"" + escaped_msg + "\"}";
             llHTTPRequest(url_base + "/chat", [HTTP_METHOD, "POST", HTTP_MIMETYPE, "application/json"], json);
             return;
         }
 
-        // === 情況 B: 選單控制 ===
+        // Handle menu selections
         if (channel == gDialogChannel) {
-            if (message == "取消") return;
+            if (message == "Cancel") return;
 
-            if (message == "開啟/暫停") {
+            if (message == "Pause/Resume") {
                 if (gIsActive) {
                     gIsActive = FALSE;
-                    llOwnerSay("系統: 已暫停監聽。");
+                    llOwnerSay("System: Paused");
                 } else {
                     gIsActive = TRUE;
-                    llOwnerSay("系統: 已恢復監聽。");
+                    llOwnerSay("System: Resumed");
                 }
-                update_status(); // 更新頭頂文字顏色
+                update_status(); // Update status display
                 return;
             }
 
-            else if (message == "設定人設") {
-                gWaitingForPrompt = TRUE;
-                llTextBox(id, "\n請輸入新的 AI 人設：", gDialogChannel);
+            else if (message == "Clear Memory") {
+                llHTTPRequest(url_base + "/memory/reset", [HTTP_METHOD, "POST", HTTP_MIMETYPE, "application/json"], "{}");
                 return;
-            }
-            else if (message == "清除記憶") {
-                 llHTTPRequest(url_base + "/chat", [HTTP_METHOD, "POST", HTTP_MIMETYPE, "application/json"], "{\"message\":\"reset\"}");
-                 return;
-            }
-            else if (gWaitingForPrompt == TRUE) {
-                llOwnerSay("正在修改人設為: " + message);
-                string json = "{\"prompt\":\"" + message + "\"}";
-                llHTTPRequest(url_base + "/SetSystemPrompt", [HTTP_METHOD, "POST", HTTP_MIMETYPE, "application/json"], json);
-                gWaitingForPrompt = FALSE;
             }
         }
     }
 
     http_response(key request_id, integer status, list metadata, string body) {
         if (status == 200) {
-            if (llSubStringIndex(body, "設定成功") != -1 || llSubStringIndex(body, "記憶已清除") != -1) {
-                llOwnerSay("系統: " + body);
-            } 
-            else {
-                llSay(0, body);
-            }
+            handle_response(body);
+        } else if (status == 202) {
+            // NPC ignored this message (buffered but not responding)
+            // Silent - this is normal behavior
+        } else if (status == 204) {
+            // Memory cleared (no content)
+            llOwnerSay("System: Memory cleared");
+        } else if (status == 429) {
+            // Rate limited
+            llOwnerSay("Connection error: Rate limit exceeded");
         } else {
-            llOwnerSay("連線錯誤 (" + (string)status + "): " + body);
+            // Handle other error codes
+            llOwnerSay("Connection error (" + (string)status + "): " + body);
         }
     }
 }
