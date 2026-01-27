@@ -88,18 +88,22 @@ export function createChatRouter(
           await stateMachine.onMessageReceived(resolvedAvatarId, speaker, userMessage);
 
           // 2. Wait for decision (long-polling with timeout)
+          const waitStart = Date.now();
           const decision = await stateMachine.waitForDecision(
             resolvedAvatarId,
             config.npc.stateMachine.timeouts.listeningMs
           );
+          const waitTime = Date.now() - waitStart;
 
           // 3. Check decision
           if (!decision.decided) {
             // NPC ignoring this avatar (timeout or low priority)
-            logger.debug(`NPC ignored ${speaker}: ${decision.reason}`);
+            logger.debug(`NPC ignored ${speaker}: ${decision.reason} (waited ${waitTime}ms)`);
             res.status(202).send(''); // 202 Accepted (no content)
             return;
           }
+
+          logger.debug(`Decision made for ${speaker} in ${waitTime}ms`);
 
           // === NPC RESPONDING ===
 

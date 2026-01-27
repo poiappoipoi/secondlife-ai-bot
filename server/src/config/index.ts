@@ -174,9 +174,9 @@ export const config: AppConfig = {
   npc: {
     enabled: parseBoolean(process.env.NPC_ENABLED, false),
     stateMachine: {
-      tickIntervalMs: parseNumber(optionalEnv('NPC_TICK_INTERVAL_MS', '1000'), 1000),
+      tickIntervalMs: parseNumber(optionalEnv('NPC_TICK_INTERVAL_MS', '500'), 500),
       timeouts: {
-        listeningMs: parseNumber(optionalEnv('NPC_LISTENING_TIMEOUT_MS', '15000'), 15000),
+        listeningMs: parseNumber(optionalEnv('NPC_LISTENING_TIMEOUT_MS', '2000'), 2000),
         thinkingMs: parseNumber(optionalEnv('NPC_THINKING_TIMEOUT_MS', '30000'), 30000),
         speakingCooldownMs: parseNumber(optionalEnv('NPC_SPEAKING_COOLDOWN_MS', '5000'), 5000),
       },

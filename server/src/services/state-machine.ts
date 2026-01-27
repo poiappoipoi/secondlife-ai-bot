@@ -64,29 +64,26 @@ export class NPCStateMachineService extends EventEmitter {
   /**
    * Handle incoming message (buffer immediately)
    */
-  async onMessageReceived(
-    avatarId: string,
-    avatarName: string,
-    content: string
-  ): Promise<void> {
+  onMessageReceived(avatarId: string, avatarName: string, content: string): void {
     // Detect if message contains trigger words
     const isDirectMention = this.decisionLayer.detectMention(content);
 
     // Add to buffer
-    const buffered = this.messageBuffer.addMessage(
-      avatarId,
-      avatarName,
-      content,
-      isDirectMention
-    );
+    const buffered = this.messageBuffer.addMessage(avatarId, avatarName, content, isDirectMention);
 
-    this.logger.debug(
-      `Buffered message from ${avatarName}${isDirectMention ? ' (mention)' : ''}`
-    );
+    this.logger.debug(`Buffered message from ${avatarName}${isDirectMention ? ' (mention)' : ''}`);
 
     // Transition to LISTENING if in IDLE
     if (this.state === 'IDLE') {
       this.transitionTo('LISTENING' as NPCState, 'message received');
+    }
+
+    // Fast-track: If high-priority mention and currently LISTENING, trigger immediate decision
+    if (isDirectMention && this.state === 'LISTENING') {
+      this.logger.debug(`Fast-track mention from ${avatarName} - checking decision immediately`);
+      // The next tick will make a decision with this message included
+      // Emit a flag to indicate high-priority message
+      this.emit('high-priority-mention', { avatarId, avatarName, content });
     }
 
     this.emit('message-buffered', buffered);
@@ -96,10 +93,7 @@ export class NPCStateMachineService extends EventEmitter {
    * Wait for decision (long-polling)
    * Returns promise that resolves when decision is made about this avatar
    */
-  waitForDecision(
-    avatarId: string,
-    timeoutMs: number
-  ): Promise<LongPollDecision> {
+  waitForDecision(avatarId: string, timeoutMs: number): Promise<LongPollDecision> {
     return new Promise((resolve) => {
       const timeoutHandle = setTimeout(() => {
         removeListeners();
@@ -129,7 +123,7 @@ export class NPCStateMachineService extends EventEmitter {
   /**
    * Notify state machine that LLM response is ready
    */
-  async onLLMResponseReady(response: string): Promise<void> {
+  onLLMResponseReady(response: string): void {
     if (this.state !== 'THINKING') {
       this.logger.warn(`LLM response ready but not in THINKING state (${this.state})`);
       return;
@@ -151,7 +145,7 @@ export class NPCStateMachineService extends EventEmitter {
   /**
    * Handle LLM error
    */
-  async onLLMError(): Promise<void> {
+  onLLMError(): void {
     this.logger.warn(`LLM error in ${this.state} state`);
 
     if (this.state === 'THINKING') {
