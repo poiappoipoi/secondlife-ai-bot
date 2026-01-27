@@ -181,11 +181,52 @@ export class OllamaProvider implements AIProvider {
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
+    let chunkCount = 0;
 
     try {
+      let lastChunkAt = Date.now();
+
       while (true) {
-        const result = await reader.read();
-        if (result.done || !result.value) break;
+        // Manual timeout: if we haven't received a chunk in 10 seconds, abort
+        const timeSinceLastChunk = Date.now() - lastChunkAt;
+        if (timeSinceLastChunk > 10000) {
+          reader.releaseLock();
+          throw new Error(`No chunk received for ${timeSinceLastChunk}ms - stream appears hung`);
+        }
+
+        this.logger.debug(`Attempting to read stream chunk #${chunkCount + 1}...`);
+
+        // Timeout wrapper with manual cleanup
+        let timeoutId: NodeJS.Timeout | null = null;
+        let result;
+
+        try {
+          result = await Promise.race([
+            reader.read(),
+            new Promise<never>((_, reject) => {
+              timeoutId = setTimeout(() => {
+                reject(new Error(`Stream chunk #${chunkCount} read timeout after 10000ms`));
+              }, 10000);
+            }),
+          ]);
+        } catch (timeoutError) {
+          this.logger.error(`Stream stalled on chunk #${chunkCount}`, timeoutError);
+          if (timeoutId) clearTimeout(timeoutId);
+          reader.releaseLock();
+          throw timeoutError;
+        } finally {
+          if (timeoutId) clearTimeout(timeoutId);
+        }
+
+        if (result.done || !result.value) {
+          this.logger.debug(`Stream ended after ${chunkCount} chunks`);
+          break;
+        }
+
+        chunkCount++;
+        const nowTime = Date.now();
+        this.logger.debug(`Received chunk #${chunkCount} (${(result.value as Uint8Array).length} bytes)`);
+        lastChunkAt = nowTime;
 
         const value = result.value as Uint8Array;
         buffer += decoder.decode(value, { stream: true });

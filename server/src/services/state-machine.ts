@@ -24,6 +24,7 @@ export class NPCStateMachineService extends EventEmitter {
   private tickIntervalHandle: NodeJS.Timer | null = null;
   private transitionHistory: StateTransition[] = [];
   private config: StateMachineConfig;
+  private pendingDecisions: Map<string, DecisionResult> = new Map(); // Queue for decisions made when no one listening
 
   constructor(
     private messageBuffer: MessageBufferService,
@@ -95,6 +96,15 @@ export class NPCStateMachineService extends EventEmitter {
    */
   waitForDecision(avatarId: string, timeoutMs: number): Promise<LongPollDecision> {
     return new Promise((resolve) => {
+      // Check if there's a pending decision for this avatar
+      const pendingDecision = this.pendingDecisions.get(avatarId);
+      if (pendingDecision) {
+        this.pendingDecisions.delete(avatarId);
+        this.logger.debug(`Decision resolved for ${avatarId} from pending queue: respond`);
+        resolve({ decided: true, reason: 'selected', decision: pendingDecision });
+        return;
+      }
+
       const timeoutHandle = setTimeout(() => {
         removeListeners();
         this.logger.debug(`Long-poll timeout for ${avatarId}`);
@@ -260,6 +270,18 @@ export class NPCStateMachineService extends EventEmitter {
     const decision = this.decisionLayer.makeDecision(buffers);
 
     if (decision.shouldRespond && decision.targetAvatarId) {
+      // Check if anyone is listening for this decision (request is still waiting)
+      const hasListeners = this.listenerCount('decision-made') > 0;
+
+      if (!hasListeners) {
+        // No request is waiting yet - queue the decision for next request
+        this.logger.debug(
+          `Decision made for ${decision.targetAvatarId} but no listeners - queueing decision`
+        );
+        this.pendingDecisions.set(decision.targetAvatarId, decision);
+        return; // Don't transition to THINKING yet
+      }
+
       this.activeTarget = decision.targetAvatarId;
       this.transitionTo('THINKING' as NPCState, `selected ${decision.targetAvatarId}`);
       this.emit('decision-made', decision);
