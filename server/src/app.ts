@@ -2,7 +2,7 @@
  * Express application factory - sets up middleware, routes, and services
  */
 import express, { Application } from 'express';
-import { createChatRouter, createSystemPromptRouter, createMemoryRouter } from './routes/index';
+import { createChatRouter, createMemoryRouter } from './routes/index';
 import {
   ConversationService,
   RateLimiterService,
@@ -86,7 +86,6 @@ export async function createApp(): Promise<{ app: Application; services: AppServ
   const rateLimiter = new RateLimiterService();
 
   app.use('/chat', createChatRouter(conversation, rateLimiter, logger));
-  app.use('/SetSystemPrompt', createSystemPromptRouter(conversation));
   app.use('/memory', createMemoryRouter(conversation, logger));
 
   return {

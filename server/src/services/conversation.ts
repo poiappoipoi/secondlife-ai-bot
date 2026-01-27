@@ -114,9 +114,7 @@ export class ConversationService {
   getHistoryWithMemories(memoryTokenBudget: number = 500): Message[] {
     // Get recent messages for keyword matching (last 5 messages)
     const conversationMsgs = this.history.slice(1);
-    const recentMessages = conversationMsgs
-      .slice(-5)
-      .map((m) => m.content);
+    const recentMessages = conversationMsgs.slice(-5).map((m) => m.content);
 
     // Retrieve relevant memories based on keywords
     const memories = this.memoryService.getRelevantMemories(recentMessages, memoryTokenBudget);
@@ -179,7 +177,9 @@ export class ConversationService {
    */
   addAssistantMessage(content: string): void {
     this.history.push({ role: 'assistant', content });
-    this.logger.debug(`Added assistant message to history (total: ${this.history.length} messages)`);
+    this.logger.debug(
+      `Added assistant message to history (total: ${this.history.length} messages)`
+    );
     this.trimHistory();
   }
 
@@ -217,16 +217,6 @@ export class ConversationService {
     }
   }
 
-  /**
-   * Updates system prompt and resets conversation
-   * Saves existing conversation before resetting
-   */
-  async setSystemPrompt(newPrompt: string): Promise<void> {
-    await this.saveAndReset('System prompt changed');
-
-    this.systemPrompt = newPrompt;
-    this.history = [{ role: 'system', content: newPrompt }];
-  }
 
   /**
    * Saves conversation to log file and resets history
@@ -236,7 +226,9 @@ export class ConversationService {
   async saveAndReset(reason: string): Promise<void> {
     // Fire-and-forget logging - don't block on file I/O
     if (this.history.length > 1) {
-      this.logger.info(`Saving conversation history before reset (${this.history.length} messages)`);
+      this.logger.info(
+        `Saving conversation history before reset (${this.history.length} messages)`
+      );
       void this.logger.saveConversation(this.history, reason).catch((error) => {
         this.logger.error('Failed to save conversation log', error);
       });
