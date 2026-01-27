@@ -217,7 +217,6 @@ export class ConversationService {
     }
   }
 
-
   /**
    * Saves conversation to log file and resets history
    * Preserves system prompt across resets

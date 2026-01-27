@@ -30,7 +30,13 @@ export class OllamaProvider implements AIProvider {
   protected readonly config: AIProviderConfig;
   protected readonly logger: LoggerService;
 
-  constructor(baseUrl: string, model: string, maxTokens: number, timeout: number, logger: LoggerService) {
+  constructor(
+    baseUrl: string,
+    model: string,
+    maxTokens: number,
+    timeout: number,
+    logger: LoggerService
+  ) {
     this.config = {
       apiKey: 'ollama',
       model,

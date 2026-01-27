@@ -48,9 +48,7 @@ export class MemoryService {
 
     // Find all matching memories
     for (const memory of this.memories.values()) {
-      const matchedKeywords = memory.keywords.filter((keyword) =>
-        messageLower.includes(keyword)
-      );
+      const matchedKeywords = memory.keywords.filter((keyword) => messageLower.includes(keyword));
 
       if (matchedKeywords.length > 0) {
         matches.push({

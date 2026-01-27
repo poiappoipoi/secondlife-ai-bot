@@ -10,8 +10,9 @@ export default tseslint.config(
   {
     languageOptions: {
       parser: tseslint.parser,
-      parserOptions: {
-        project: './tsconfig.json',
+    parserOptions: {
+        // include both main tsconfig and test tsconfig so ESLint can parse test files
+        project: ['./tsconfig.json', './tsconfig.test.json'],
         tsconfigRootDir: import.meta.dirname,
       },
     },

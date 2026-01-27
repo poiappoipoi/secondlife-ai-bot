@@ -43,7 +43,13 @@ interface XAIResponse {
 export class XAIProvider extends BaseAIProvider {
   readonly name = 'X.AI Grok';
 
-  constructor(apiKey: string, model: string, maxTokens: number, timeout: number, logger: LoggerService) {
+  constructor(
+    apiKey: string,
+    model: string,
+    maxTokens: number,
+    timeout: number,
+    logger: LoggerService
+  ) {
     super(
       {
         apiKey,
