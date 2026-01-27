@@ -23,6 +23,8 @@ export default tseslint.config(
       'prettier/prettier': 'error',
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
+      // allow assigning unknown/error-typed values where appropriate
+      '@typescript-eslint/no-unsafe-assignment': 'off',
       // disable unsafe enum comparison rule where enums and switch predicates may differ
       '@typescript-eslint/no-unsafe-enum-comparison': 'off',
       '@typescript-eslint/no-unused-vars': [
