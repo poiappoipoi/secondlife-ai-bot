@@ -59,18 +59,10 @@ export function createChatRouter(
         `Received message from ${speaker} (Request ${rateLimit.current}/${rateLimit.max} this hour): ${userMessage}`
       );
 
-      // Handle reset command
-      const normalizedMessage = userMessage.trim().toLowerCase();
-      if (normalizedMessage === 'reset' || userMessage === '清除') {
-        logger.info('Memory reset requested by user');
-        await conversation.saveAndReset('Manual reset command');
-        res.send('【Memory cleared】Your conversation has been saved!');
-        return;
-      }
-
       try {
-        // Add user message to conversation
-        conversation.addUserMessage(userMessage);
+        // Add user message to conversation with speaker context
+        const messageWithSpeaker = `[${speaker}] ${userMessage}`;
+        conversation.addUserMessage(messageWithSpeaker);
 
         // Get AI provider
         const provider = getConfiguredProvider(logger);
