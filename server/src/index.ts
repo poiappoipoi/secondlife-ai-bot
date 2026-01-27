@@ -95,41 +95,44 @@ export const generateBanner = (options: BannerOptions): string[] => {
   return lines;
 };
 
-const { app, services } = await createApp();
-const { port } = config.server;
+// Only start server if this file is run directly (not imported in tests)
+if (import.meta.main) {
+  const { app, services } = await createApp();
+  const { port } = config.server;
 
-app.listen(port, () => {
-  const providerName = config.ai.provider;
-  const modelName = providerName === 'ollama' ? config.ai.ollama.model : config.ai.xai.model;
+  app.listen(port, () => {
+    const providerName = config.ai.provider;
+    const modelName = providerName === 'ollama' ? config.ai.ollama.model : config.ai.xai.model;
 
-  const banner = generateBanner({
-    title: '🤖 AI Bot Server',
-    port,
-    provider: providerName,
-    model: modelName,
-    rateLimit: config.rateLimit.maxRequestsPerHour,
-    configEnv: process.env.AI_PROVIDER,
+    const banner = generateBanner({
+      title: '🤖 AI Bot Server',
+      port,
+      provider: providerName,
+      model: modelName,
+      rateLimit: config.rateLimit.maxRequestsPerHour,
+      configEnv: process.env.AI_PROVIDER,
+    });
+
+    banner.forEach((line) => console.log(line));
+    console.log(`Active persona: ${services.persona.getPersonaName()}\n`);
+
+    // Log server startup details
+    services.logger.info(`Server started successfully on port ${port}`);
+    services.logger.info(`Log level: ${config.logging.logLevel}`);
+    services.logger.info(
+      `AI Provider: ${providerName} (model: ${modelName}, max tokens: ${config.ai.maxTokens})`
+    );
+    services.logger.info(`Active persona: ${services.persona.getPersonaName()}`);
+    services.logger.info(`Rate limit: ${config.rateLimit.maxRequestsPerHour} requests/hour`);
   });
 
-  banner.forEach((line) => console.log(line));
-  console.log(`Active persona: ${services.persona.getPersonaName()}\n`);
+  // Graceful shutdown
+  function cleanup(): void {
+    services.logger.info('Server shutting down');
+    services.conversation.destroy();
+    process.exit(0);
+  }
 
-  // Log server startup details
-  services.logger.info(`Server started successfully on port ${port}`);
-  services.logger.info(`Log level: ${config.logging.logLevel}`);
-  services.logger.info(
-    `AI Provider: ${providerName} (model: ${modelName}, max tokens: ${config.ai.maxTokens})`
-  );
-  services.logger.info(`Active persona: ${services.persona.getPersonaName()}`);
-  services.logger.info(`Rate limit: ${config.rateLimit.maxRequestsPerHour} requests/hour`);
-});
-
-// Graceful shutdown
-function cleanup(): void {
-  services.logger.info('Server shutting down');
-  services.conversation.destroy();
-  process.exit(0);
+  process.on('SIGTERM', cleanup);
+  process.on('SIGINT', cleanup);
 }
-
-process.on('SIGTERM', cleanup);
-process.on('SIGINT', cleanup);
