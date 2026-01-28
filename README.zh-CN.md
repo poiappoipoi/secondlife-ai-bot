@@ -46,25 +46,37 @@ bun install
 
 3. **配置环境**
 
-将 `.env.example` 复制到 `.env` 并添加 API 密钥：
+建议直接创建一个 `.env.local` 来覆盖本地需要的值：
+
+在项目根目录创建 `.env.local`，示例内容：
 
 ```bash
-cp .env.example .env
-```
-
-编辑 `.env`：
-
-```env
+# 创建文件（在 Unix shell 下）
+cat > .env.local <<'EOF'
 # 服务器
-PORT=3000
+PORT=3002
 
 # AI 提供商 (xai | ollama)
 AI_PROVIDER=xai
 XAI_API_KEY=你的-xai-api-密钥
+EOF
+```
 
-# 可选：Ollama（本地 LLM）
-# OLLAMA_BASE_URL=http://localhost:11434/v1
-# OLLAMA_MODEL=cat-maid
+服务器会读取仓库中的默认 `.env`，并将 `.env.local` 中的值作为本地覆盖，这样可以避免将密钥提交到仓库。
+
+#### 快速启动 — X.AI (Grok) 模式
+
+创建或更新一个最小的 `.env.local`，然后以 X.AI 模式启动服务器：
+
+```bash
+cat > .env.local <<'EOF'
+PORT=3002
+AI_PROVIDER=xai
+XAI_API_KEY=你的-xai-api-密钥
+EOF
+
+# 启动开发服务器
+bun run dev
 ```
 
 4. **启动服务器**
@@ -74,7 +86,7 @@ bun run dev          # 开发模式（热重新加载）
 bun run start        # 生产模式
 ```
 
-服务器默认在端口 3000 启动。
+服务器默认在端口 3002 启动。
 
 ### 在 Second Life 中设置
 
@@ -93,7 +105,7 @@ string url_base = "https://random-name.trycloudflare.com";
 
 **如果使用直接 IP：**
 ```lsl
-string url_base = "http://你的服务器IP:3000";
+string url_base = "http://你的服务器IP:3002";
 ```
 
 4. 保存并重置脚本
@@ -166,11 +178,11 @@ server/
 
 ### 配置
 
-环境变量（查看 `.env.example` 获取所有选项）：
+环境变量（默认在 `.env` 中）。建议在本地使用 `.env.local` 覆盖：
 
 ```env
 # 服务器
-PORT=3000
+PORT=3002
 NODE_ENV=development
 
 # AI 提供商
@@ -282,8 +294,8 @@ npm run check
 ### 故障排除
 
 **服务器无法启动**
-- 检查端口 3000 是否已被使用：`lsof -i :3000`
-- 验证 `.env` 文件存在且具有有效的 API 密钥
+- 检查端口 3002 是否已被使用：`lsof -i :3002`
+- 验证 `.env` 或 `.env.local` 包含有效的 API 密钥
 - 检查 Bun 安装：`bun --version`
 
 **机器人在 Second Life 中无响应**
@@ -308,7 +320,7 @@ npm run check
 # Windows: choco install cloudflare-warp
 # Linux: wget https://github.com/cloudflare/warp-cli/releases/download/v1.0.0/warp-cli-linux-x86_64.zip
 
-cloudflared tunnel --url http://localhost:3000
+cloudflared tunnel --url http://localhost:3002
 ```
 
 详见 [CLOUDFLARE_TUNNEL.md](CLOUDFLARE_TUNNEL.md)。

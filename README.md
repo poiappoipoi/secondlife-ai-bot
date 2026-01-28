@@ -46,25 +46,37 @@ bun install
 
 3. **Configure environment**
 
-Copy `.env.example` to `.env` and add your API keys:
+Create a `.env.local` file to override only the values you need:
+
+Create `.env.local` with the minimal overrides:
 
 ```bash
-cp .env.example .env
-```
-
-Edit `.env`:
-
-```env
+# create file
+cat > .env.local <<'EOF'
 # Server
-PORT=3000
+PORT=3002
 
 # AI Provider (xai | ollama)
 AI_PROVIDER=xai
 XAI_API_KEY=your-xai-api-key-here
+EOF
+```
 
-# Optional: Ollama (local LLM)
-# OLLAMA_BASE_URL=http://localhost:11434/v1
-# OLLAMA_MODEL=cat-maid
+The server will load defaults from `.env` and apply overrides from `.env.local`. This keeps secrets out of the repo.
+
+#### Quick start — X.AI (Grok) mode
+
+Create a minimal `.env.local` (or update the one above) and start the server in X.AI mode:
+
+```bash
+cat > .env.local <<'EOF'
+PORT=3002
+AI_PROVIDER=xai
+XAI_API_KEY=your-xai-api-key-here
+EOF
+
+# Start development server
+bun run dev
 ```
 
 4. **Start the server**
@@ -74,7 +86,7 @@ bun run dev          # Development with hot reload
 bun run start        # Production
 ```
 
-The server starts on port 3000 by default.
+The server starts on port 3002 by default.
 
 ### Setting Up in Second Life
 
@@ -93,7 +105,7 @@ string url_base = "https://random-name.trycloudflare.com";
 
 **If using direct IP:**
 ```lsl
-string url_base = "http://your-server-ip:3000";
+string url_base = "http://your-server-ip:3002";
 ```
 
 4. Save and reset the script
@@ -166,11 +178,11 @@ Clear conversation history and save to logs.
 
 ### Configuration
 
-Environment variables (see `.env.example` for all options):
+Environment variables (defaults in `.env`). Recommended local overrides in `.env.local`:
 
 ```env
 # Server
-PORT=3000
+PORT=3002
 NODE_ENV=development
 
 # AI Provider
@@ -282,8 +294,8 @@ The bot uses an optional state machine to make it act more like an NPC:
 ### Troubleshooting
 
 **Server won't start**
-- Check if port 3000 is already in use: `lsof -i :3000`
-- Verify `.env` file exists and has valid API keys
+- Check if port 3002 is already in use: `lsof -i :3002`
+- Verify `.env` or `.env.local` contains valid API keys
 - Check Bun installation: `bun --version`
 
 **Bot not responding in Second Life**
@@ -308,7 +320,7 @@ To expose your local server to Second Life, use Cloudflare Tunnel:
 # Windows: choco install cloudflare-warp
 # Linux: wget https://github.com/cloudflare/warp-cli/releases/download/v1.0.0/warp-cli-linux-x86_64.zip
 
-cloudflared tunnel --url http://localhost:3000
+cloudflared tunnel --url http://localhost:3002
 ```
 
 See [CLOUDFLARE_TUNNEL.md](CLOUDFLARE_TUNNEL.md) for detailed setup.
