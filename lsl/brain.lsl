@@ -1,4 +1,4 @@
-string url_base = ""; // Set server address here
+string url_base = "http://antonio-biology-sparc-chemicals.trycloudflare.com"; // Set server address here
 
 integer gDialogChannel;
 integer gListenHandle_Chat;
@@ -103,8 +103,9 @@ default
             if (gIsActive == FALSE) return;
 
             // Check distance - ignore if avatar is too far (>10m)
-            vector npc_pos = llGetObjectPos();
-            vector avatar_pos = llGetAgentPos(id);
+            vector npc_pos = llGetPos();
+            list details = llGetObjectDetails(id, [OBJECT_POS]);
+            vector avatar_pos = llList2Vector(details, 0);
             float distance = llVecMag(avatar_pos - npc_pos);
             if (distance > gMaxDistance) return; // Ignore - too far away
 

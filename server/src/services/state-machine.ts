@@ -167,7 +167,7 @@ export class NPCStateMachineService extends EventEmitter {
       this.transitionTo('IDLE' as NPCState, 'LLM error recovery');
     }
 
-    this.emit('error');
+    this.emit('llm-error');
   }
 
   /**
